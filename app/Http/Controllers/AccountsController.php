@@ -25,7 +25,7 @@ class AccountsController extends Controller
                 'email' => 'required|email|unique:accounts,email',
                 'gender' => 'required|string',
                 'contact_number' => 'required|string|max:15',
-                'user_type' => 'nullable|string',
+                'user_type_id' => 'nullable|string',
             ]);
 
             // Generate verification code
@@ -39,7 +39,7 @@ class AccountsController extends Controller
                 'email' => $validated['email'],
                 'gender' => $validated['gender'],
                 'contact_number' => $validated['contact_number'] ?? null,
-                'user_type' => $validated['user_type'] ?? 'student',
+                'user_type_id' => $validated['user_type_id'] ?? 'student',
                 'verification_code' => $verificationCode,
             ])->makeHidden(['password', 'created_at', 'updated_at']);
 

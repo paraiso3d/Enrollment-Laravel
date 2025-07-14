@@ -20,7 +20,7 @@ class accounts extends Model
         'last_name',
         'contact_number',
         'gender',
-        'user_type',
+        'user_type_id',
         'verification_code',
         'is_verified',
         'is_archive',
