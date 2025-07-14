@@ -21,6 +21,8 @@ use App\Http\Controllers\SchoolCampusController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+ Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
+
 // Login and Logout 
 Route::post('login', [AuthController::class, 'login']);
 Route::middleware('auth:sanctum')->group(function () {
@@ -60,7 +62,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('restoreusertype/{id}', [UserTypesController::class, 'restoreUserType']);
 });
 
- Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 
   // Courses Management

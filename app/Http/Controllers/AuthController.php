@@ -13,7 +13,7 @@ class AuthController extends Controller
         try {
             // Validate input
             $request->validate([
-                'email' => 'required|string',
+                'username' => 'required|string',
                 'password' => 'required|string',
             ]);
 
@@ -24,7 +24,7 @@ class AuthController extends Controller
             if ($user && Hash::check($request->password, $user->password)) {
 
                 // Check if user is verified
-                if (!$user->is_verified) {
+                if (!$user->is_verified == 0) {
                     return response()->json([
                         'isSuccess' => false,
                         'message' => 'Your account is not yet verified. Please check your email.',
