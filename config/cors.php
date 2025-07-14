@@ -17,7 +17,7 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'], // or ['http://localhost:3000'] if you want it specific
+    'allowed_origins' => ['http://localhost:5173'], // or ['http://localhost:3000'] if you want it specific
 
     'allowed_origins_patterns' => [],
 

@@ -17,7 +17,6 @@ class UserTypesController extends Controller
     {
         
         try {
-            $user = Auth::user();
             // Retrieve all user types
             $userTypes = user_types::where('is_archived', 0)->get();
 
