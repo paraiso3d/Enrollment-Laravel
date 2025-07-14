@@ -19,6 +19,7 @@ class AccountsController extends Controller
         // Validate the request data
         try {
             $validated = $request->validate([
+                 'username' => 'required|string|max:50',
                 'first_name' => 'required|string|max:50',
                 'last_name' => 'required|string|max:50',
                 'password' => 'required|string|min:6',
@@ -33,6 +34,7 @@ class AccountsController extends Controller
 
             // Create user
             $user = accounts::create([
+                'username' => $validated['username'],
                 'first_name' => $validated['first_name'],
                 'last_name' => $validated['last_name'],
                 'password' => Hash::make($validated['password']),
