@@ -54,12 +54,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // User Types Management
 Route::middleware('auth:sanctum')->group(function () {
-    Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
     Route::post('createusertype', [UserTypesController::class, 'createUserType']);
     Route::post('updateusertype/{id}', [UserTypesController::class, 'updateUserType']);
     Route::post('deleteusertype/{id}', [UserTypesController::class, 'deleteUserType']);
     Route::post('restoreusertype/{id}', [UserTypesController::class, 'restoreUserType']);
 });
+
+ Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 
   // Courses Management
