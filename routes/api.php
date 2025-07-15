@@ -29,7 +29,7 @@ Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogle
 
 Route::get('/auth/github/redirect', [SocialAuthController::class, 'redirectToGithub']);
 Route::get('/auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
-
+// Admissions
 
 Route::post('createuser', [AccountsController::class, 'createUser']);
 
