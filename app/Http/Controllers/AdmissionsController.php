@@ -152,7 +152,7 @@ public function approveAdmission(Request $request, $id)
             'isSuccess' => false,
             'message' => 'Admission not found.',
         ], 404);
-    } catch (\Throwable $e) {
+    } catch (Throwable $e) {
         return response()->json([
             'isSuccess' => false,
             'message' => 'Failed to approve admission.',

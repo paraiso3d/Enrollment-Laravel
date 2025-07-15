@@ -4,6 +4,13 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
+
 use App\Models\accounts;
 
 class AuthController extends Controller
@@ -46,7 +53,7 @@ class AuthController extends Controller
             'message' => 'Invalid Email/Username or Password.',
         ], 401);
 
-    } catch (\Illuminate\Validation\ValidationException $e) {
+    } catch (ValidationException $e) {
         return response()->json([
             'isSuccess' => false,
             'message' => 'Validation failed.',

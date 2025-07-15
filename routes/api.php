@@ -9,6 +9,8 @@ use App\Http\Controllers\SchoolYearsController;
 use App\Http\Controllers\SectionsController;
 use App\Http\Controllers\UserTypesController;
 use App\Http\Controllers\SchoolCampusController;
+use App\Http\Controllers\AdmissionsController;
+use App\Http\Controllers\SocialAuthController;
 
 
 /*
@@ -21,6 +23,14 @@ use App\Http\Controllers\SchoolCampusController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+
+Route::get('/login/google', [SocialAuthController::class, 'redirectToGoogle']);
+Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
+
+
+
+
+
  Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 // Login and Logout 
