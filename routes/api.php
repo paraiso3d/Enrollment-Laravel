@@ -23,10 +23,11 @@ use App\Http\Controllers\SocialAuthController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-
+// TO INTEGRATE
 Route::get('/login/google', [SocialAuthController::class, 'redirectToGoogle']);
 Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
+Route::post('createuser', [AccountsController::class, 'createUser']);
 
 
 

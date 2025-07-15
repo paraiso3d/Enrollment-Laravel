@@ -9,78 +9,92 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
+use Illuminate\Support\Facades\Validator;
 
 class AccountsController extends Controller
 {
 
     // Method to register a new account
-    public function registerAccount(Request $request)
+    public function createUser(Request $request)
     {
-        // Validate the request data
         try {
-            $validated = $request->validate([
-                 'username' => 'required|string|max:50',
-                'first_name' => 'required|string|max:50',
-                'last_name' => 'required|string|max:50',
-                'password' => 'required|string|min:6',
-                'email' => 'required|email|unique:accounts,email',
-                'gender' => 'required|string',
-                'contact_number' => 'required|string|max:15',
-                'user_type_id' => 'nullable|string',
+            $validator = Validator::make($request->all(), [
+                'school_campus' => 'required|string|max:255',
+                'academic_year' => 'required|string|max:255',
+                'application_type' => 'required|string|max:50',
+                'classification' => 'required|string|max:50',
+                'grade_level' => 'required|string|max:50',
+                'academic_program' => 'required|string|max:255',
+                'surname' => 'required|string|max:50',
+                'given_name' => 'required|string|max:50',
+                'middle_name' => 'nullable|string|max:50',
+                'middle_initial' => 'nullable|string|max:5',
+                'suffix' => 'nullable|string|max:10',
+                'date_of_birth' => 'required|date',
+                'place_of_birth' => 'required|string|max:100',
+                'gender' => 'required|string|max:10',
+                'civil_status' => 'required|string|max:20',
+                'internet_connectivity' => 'required|string|max:50',
+                'learning_modality' => 'required|string|max:50',
+                'digital_literacy' => 'required|string|max:50',
+                'device' => 'required|string|max:50',
+
+                //  Dropdown inputs
+                'street_address' => 'required|string|max:255',
+                'province' => 'required|string|max:100',
+                'city' => 'required|string|max:100',
+                'barangay' => 'required|string|max:100',
+
+                'nationality' => 'required|string|max:50',
+                'religion' => 'required|string|max:50',
+                'ethnic_affiliation' => 'nullable|string|max:50',
+                'telephone_number' => 'nullable|string|max:15',
+                'mobile_number' => 'required|string|max:15',
+                'email' => 'required|email|max:100',
+                'is_4ps_member' => 'required|boolean',
+                'is_insurance_member' => 'required|boolean',
+                'vacation_status' => 'required|string|max:50',
+                'is_indigenous' => 'required|boolean',
             ]);
 
-            // Generate verification code
-            $verificationCode = Str::upper(Str::random(6));
+            if ($validator->fails()) {
+                throw new ValidationException($validator);
+            }
 
-            // Create user
-            $user = accounts::create([
-                'username' => $validated['username'],
-                'first_name' => $validated['first_name'],
-                'last_name' => $validated['last_name'],
-                'password' => Hash::make($validated['password']),
-                'email' => $validated['email'],
-                'gender' => $validated['gender'],
-                'contact_number' => $validated['contact_number'] ?? null,
-                'user_type_id' => $validated['user_type_id'] ?? 'student',
-                'verification_code' => $verificationCode,
-            ])->makeHidden(['password', 'created_at', 'updated_at']);
+            $validatedData = $validator->validated();
+            $plainPassword = Str::random(8); // you can use any length
+            $verificationCode = rand(100000, 999999); // or use Str::uuid()
 
-            // Raw HTML Email
-            $html = "
-            <html>
-                <body style='font-family: Arial, sans-serif;'>
-                    <h2>Hello, {$validated['first_name']}!</h2>
-                    <p>Thank you for registering.</p>
-                    <p>Your verification code is:</p>
-                    <h1 style='color: #3498db;'>$verificationCode</h1>
-                    <p>Please enter this code to verify your account.</p>
-                    <br>
-                    <small>This is an automated message. Do not reply.</small>
-                </body>
-            </html>
-        ";
+            // Step 2: Add to validated data
+            $validatedData['password'] = Hash::make($plainPassword);
+            $validatedData['is_verified'] = 0; // default not verified
+            $validatedData['verification_code'] = $verificationCode; // make sure this column exists
 
-            Mail::send([], [], function ($message) use ($validated, $html) {
-                $message->to($validated['email'])
-                    ->subject('Account Verification Code')
-                    ->setBody($html, 'text/html');
+            // Step 3: Save the account
+            $account = accounts::create($validatedData);
+
+            // Step 4: Send email
+            Mail::raw("Welcome! Your password is: $plainPassword\nYour verification code is: $verificationCode", function ($message) use ($account) {
+                $message->to($account->email)
+                    ->subject('Your Account Details');
             });
+
 
             return response()->json([
                 'isSuccess' => true,
-                'message' => 'Account created successfully. Verification code sent to your email.',
-                'user' => $user,
-            ], 200);
+                'message' => 'Admission created successfully.',
+                'accounts' => $account,
+            ], 201);
         } catch (ValidationException $e) {
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Validation failed.',
                 'errors' => $e->errors(),
             ], 422);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Account creation failed.',
+                'message' => 'Failed to create admission.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -286,45 +300,45 @@ class AccountsController extends Controller
     }
 
     public function adminCreateAccount(Request $request)
-{
-    try {
-        // Authenticate admin first (optional if already protected by middleware)
-        $admin = $request->user();
-        if (!$admin || $admin->user_type !== 'admin') {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Unauthorized. Only admins can create accounts.'
-            ], 403);
-        }
+    {
+        try {
+            // Authenticate admin first (optional if already protected by middleware)
+            $admin = $request->user();
+            if (!$admin || $admin->user_type !== 'admin') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized. Only admins can create accounts.'
+                ], 403);
+            }
 
-        // Validate input
-        $validated = $request->validate([
-            'first_name' => 'required|string|max:50',
-            'last_name' => 'required|string|max:50',
-            'email' => 'required|email|unique:accounts,email',
-            'gender' => 'required|string',
-            'contact_number' => 'required|max:15',
-           'user_type' => 'required|exists:user_types,id',
-        ]);
+            // Validate input
+            $validated = $request->validate([
+                'first_name' => 'required|string|max:50',
+                'last_name' => 'required|string|max:50',
+                'email' => 'required|email|unique:accounts,email',
+                'gender' => 'required|string',
+                'contact_number' => 'required|max:15',
+                'user_type' => 'required|exists:user_types,id',
+            ]);
 
-        // Generate verification code and temporary password
-        $verificationCode = Str::upper(Str::random(6));
-        $tempPassword = Str::random(8); // You may email this to the user
+            // Generate verification code and temporary password
+            $verificationCode = Str::upper(Str::random(6));
+            $tempPassword = Str::random(8); // You may email this to the user
 
-        // Create account
-        $user = accounts::create([
-            'first_name' => $validated['first_name'],
-            'last_name' => $validated['last_name'],
-            'email' => $validated['email'],
-            'password' => Hash::make($tempPassword),
-            'gender' => $validated['gender'],
-            'contact_number' => $validated['contact_number'],
-            'user_type' => $validated['user_type'],
-            'verification_code' => $verificationCode,
-        ])->makeHidden(['password', 'created_at', 'updated_at']);
+            // Create account
+            $user = accounts::create([
+                'first_name' => $validated['first_name'],
+                'last_name' => $validated['last_name'],
+                'email' => $validated['email'],
+                'password' => Hash::make($tempPassword),
+                'gender' => $validated['gender'],
+                'contact_number' => $validated['contact_number'],
+                'user_type' => $validated['user_type'],
+                'verification_code' => $verificationCode,
+            ])->makeHidden(['password', 'created_at', 'updated_at']);
 
-        // Email HTML
-        $html = "
+            // Email HTML
+            $html = "
             <html>
                 <body style='font-family: Arial, sans-serif;'>
                     <h2>Hello, {$validated['first_name']}!</h2>
@@ -339,32 +353,30 @@ class AccountsController extends Controller
             </html>
         ";
 
-        // Send email
-        Mail::send([], [], function ($message) use ($validated, $html) {
-            $message->to($validated['email'])
-                ->subject('Your Account Has Been Created')
-                ->setBody($html, 'text/html');
-        });
+            // Send email
+            Mail::send([], [], function ($message) use ($validated, $html) {
+                $message->to($validated['email'])
+                    ->subject('Your Account Has Been Created')
+                    ->setBody($html, 'text/html');
+            });
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Account created and email sent successfully.',
-            'user' => $user,
-        ], 201);
-
-    } catch (ValidationException $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Account creation failed.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Account created and email sent successfully.',
+                'user' => $user,
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Account creation failed.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
 }
