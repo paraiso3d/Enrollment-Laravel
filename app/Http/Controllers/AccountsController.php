@@ -23,7 +23,7 @@ class AccountsController extends Controller
                 'academic_year' => 'required|string|max:255',
                 'application_type' => 'required|string|max:50',
                 'classification' => 'required|string|max:50',
-                'grade_level' => 'required|string|max:50',
+                'grade_level' => 'nullable|string|max:50',
                 'academic_program' => 'required|string|max:255',
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
@@ -100,7 +100,7 @@ class AccountsController extends Controller
         }
     }
 
-    
+
 
 
     // Method to verify the account using the verification code
