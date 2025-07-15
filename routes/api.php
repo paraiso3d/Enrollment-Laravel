@@ -27,9 +27,11 @@ use App\Http\Controllers\SocialAuthController;
 Route::get('/login/google', [SocialAuthController::class, 'redirectToGoogle']);
 Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
+Route::get('/auth/github/redirect', [SocialAuthController::class, 'redirectToGithub']);
+Route::get('/auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
+
+
 Route::post('createuser', [AccountsController::class, 'createUser']);
-
-
 
 
  Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);

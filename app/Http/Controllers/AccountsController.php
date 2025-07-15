@@ -100,6 +100,8 @@ class AccountsController extends Controller
         }
     }
 
+    
+
 
     // Method to verify the account using the verification code
     public function verifyAccount(Request $request)
