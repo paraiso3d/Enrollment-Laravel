@@ -67,7 +67,7 @@ class SocialAuthController extends Controller
     {
         /** @var \Laravel\Socialite\Two\GithubProvider $provider */
         $provider = Socialite::driver('github');
-        $githubUser = $provider->stateless()->redirect();
+        return $provider->stateless()->redirect();
     }
 
     public function handleGithubCallback()

@@ -56,7 +56,7 @@ class CoursesController extends Controller
                 'isSuccess' => true,
                 'courses' => $courses,
             ], 200);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Failed to retrieve courses.',

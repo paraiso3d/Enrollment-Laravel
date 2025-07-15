@@ -8,8 +8,6 @@ use Illuminate\Validation\ValidationException;
 use Throwable;      
 
 
-
-
 class EnrollmentsController extends Controller
 {
     public function listEnrollments()
