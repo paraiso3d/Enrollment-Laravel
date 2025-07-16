@@ -19,23 +19,32 @@ use Throwable;
 
 class AdmissionsController extends Controller
 {
-    public function getAdmissions()
-    {
-        try {
-            // Retrieve all admissions
-           $admissions = admissions::with('account')->get();
-            return response()->json([
-                'isSuccess' => true,
-                'admissions' => $admissions,
-            ], 200);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve admissions.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+   public function getAdmissions(Request $request)
+{
+    try {
+        // Paginate admissions and load related account (10 per page)
+        $admissions = admissions::with('account')->paginate(10);
+
+        return response()->json([
+            'isSuccess' => true,
+            'admissions' => $admissions->items(), // admissions data on current page
+            'pagination' => [
+                'current_page' => $admissions->currentPage(),
+                'per_page' => $admissions->perPage(),
+                'total' => $admissions->total(),
+                'last_page' => $admissions->lastPage(),
+            ],
+        ], 200);
+
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve admissions.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
    public function applyAdmission(Request $request)

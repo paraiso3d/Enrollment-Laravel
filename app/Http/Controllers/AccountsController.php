@@ -16,6 +16,32 @@ class AccountsController extends Controller
 {
 
     // Method to register a new account
+   public function getusers(Request $request)
+{
+    try {
+        // Get paginated users (10 per page)
+        $users = accounts::paginate(10);
+
+        return response()->json([
+            'isSuccess' => true,
+            'users' => $users->items(), // Actual user data for current page
+            'pagination' => [
+                'current_page' => $users->currentPage(),
+                'per_page' => $users->perPage(),
+                'total' => $users->total(),
+                'last_page' => $users->lastPage(),
+            ],
+        ], 200);
+
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve users.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
     public function createUser(Request $request)
     {
         try {
