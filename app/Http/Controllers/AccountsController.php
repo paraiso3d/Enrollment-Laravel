@@ -22,6 +22,10 @@ class AccountsController extends Controller
         // Get paginated users (10 per page)
         $users = accounts::paginate(10);
 
+         $users->getCollection()->transform(function ($user) {
+            return $user->makeHidden(['is_verified']);
+        });
+
         return response()->json([
             'isSuccess' => true,
             'users' => $users->items(), // Actual user data for current page
