@@ -9,6 +9,7 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 use Throwable;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Validator;
 
 class AccountsController extends Controller
@@ -19,12 +20,9 @@ class AccountsController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'school_campus' => 'required|string|max:255',
-                'academic_year' => 'required|string|max:255',
-                'application_type' => 'required|string|max:50',
-                'classification' => 'required|string|max:50',
-                'grade_level' => 'nullable|string|max:50',
-                'academic_program' => 'required|string|max:255',
+        
+                
+                //Personal Information
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
@@ -82,7 +80,7 @@ class AccountsController extends Controller
 
             return response()->json([
                 'isSuccess' => true,
-                'message' => 'Admission created successfully.',
+                'message' => 'User created successfully.',
                 'accounts' => $account,
             ], 201);
         } catch (ValidationException $e) {
@@ -171,40 +169,94 @@ class AccountsController extends Controller
     }
 
     // Method to change the user profile
-    public function changeProfile(Request $request)
-    {
-        try {
-            $user = $request->user(); // Authenticated user
+ public function updateProfile(Request $request)
+{
+    try {
+        $account = auth()->user(); // ✅ Authenticated user model
 
-            $validated = $request->validate([
-                'first_name' => 'sometimes|string|max:50',
-                'last_name' => 'sometimes|string|max:50',
-                'gender' => 'sometimes|string|in:male,female,other',
-                'contact_number' => 'sometimes|nullable|string|max:15',
-                'email' => 'sometimes|email|unique:accounts,email,' . $user->id,
-            ]);
+        $validator = Validator::make($request->all(), [
+            // Personal Information
+            'username' => 'sometimes|required|string|max:50',
+            'surname' => 'sometimes|required|string|max:50',
+            'given_name' => 'sometimes|required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'middle_initial' => 'nullable|string|max:5',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'sometimes|required|date',
+            'place_of_birth' => 'sometimes|required|string|max:100',
+            'gender' => 'sometimes|required|string|max:10',
+            'civil_status' => 'sometimes|required|string|max:20',
+            'internet_connectivity' => 'sometimes|required|string|max:50',
+            'learning_modality' => 'sometimes|required|string|max:50',
+            'digital_literacy' => 'sometimes|required|string|max:50',
+            'device' => 'sometimes|required|string|max:50',
 
-            $user->update($validated);
+            // Address
+            'street_address' => 'sometimes|required|string|max:255',
+            'province' => 'sometimes|required|string|max:100',
+            'city' => 'sometimes|required|string|max:100',
+            'barangay' => 'sometimes|required|string|max:100',
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Profile updated successfully.',
-                'user' => $user->makeHidden(['password', 'verification_code', 'is_verified', 'created_at', 'updated_at']),
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Profile update failed.',
-                'error' => $e->getMessage(),
-            ], 500);
+            // Other Info
+            'nationality' => 'sometimes|required|string|max:50',
+            'religion' => 'sometimes|required|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'sometimes|required|string|max:15',
+
+            // ✅ Email unique rule with ignore
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'max:100',
+                Rule::unique('accounts', 'email')->ignore($account->id),
+            ],
+            
+            'is_4ps_member' => 'sometimes|required|boolean',
+            'is_insurance_member' => 'sometimes|required|boolean',
+            'vacation_status' => 'sometimes|required|string|max:50',
+            'is_indigenous' => 'sometimes|required|boolean',
+        ]);
+      
+;
+        
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
+
+        $validated = $validator->validated();
+        if ($request->hasFile('profile_picture')) {
+        $imagePath = $request->file('profile_picture')->store('profile_pictures', 'public');
+        $validated['profile_picture'] = $imagePath;
+}
+
+        $account = accounts::findOrFail(auth()->id());
+        $account->update($validated);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Profile updated successfully.',
+            'accounts' => $account,
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to update profile.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
     public function changePassword(Request $request)
     {

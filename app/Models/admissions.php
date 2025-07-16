@@ -16,33 +16,38 @@ class admissions extends Model
         'classification',
         'grade_level',
         'academic_program',
-        'surname',
-        'given_name',
+
+
+        'first_name',
         'middle_name',
-        'middle_initial',
-        'suffix',
-        'date_of_birth',
-        'place_of_birth',
+        'last_name',
         'gender',
-        'civil_status',
-        'internet_connectivity',
-        'learning_modality',
-        'digital_literacy',
-        'device',
+        'birthdate',
+        'birthplace',
+        'email',
+        'contact_number',
         'street_address',
         'province',
         'city',
         'barangay',
-        'nationality',
-        'religion',
-        'ethnic_affiliation',
-        'telephone_number',
-        'mobile_number',
-        'email',
-        'is_4ps_member',
-        'is_insurance_member',
-        'vacation_status',
-        'is_indigenous',
-    ];
 
+        // Academic background (if applicable)
+        'strand',
+        'lrn',
+        'last_school_attended',
+
+        // System/processing fields
+        'school_year',
+        'status',
+        'remarks',
+
+        //Files
+        'form_137_path',
+        'form_138_path',
+        'birth_certificate_path',
+        'good_moral_path',
+        'cortificate_of_completion_path',
+
+
+    ];
 }
