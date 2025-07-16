@@ -45,7 +45,7 @@ class AdmissionsController extends Controller
     }
 }
 
-
+//TEST
 
    public function applyAdmission(Request $request)
 {
