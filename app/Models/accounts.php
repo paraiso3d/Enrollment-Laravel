@@ -13,6 +13,14 @@ class accounts extends Authenticatable
 {
       use HasApiTokens, Notifiable;
 
+      protected $appends = ['profile_picture_url'];
+
+    public function getProfilePictureUrlAttribute()
+    {
+        return $this->profile_picture ? asset($this->profile_picture) : null;
+    }
+
+
       protected $table = 'accounts';
      protected $fillable = [
         'profile_picture',

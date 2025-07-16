@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
+use App\Models\accounts;
 use Throwable;
 
 
@@ -22,8 +23,7 @@ class AdmissionsController extends Controller
     {
         try {
             // Retrieve all admissions
-            $admissions = admissions::all();
-
+           $admissions = admissions::with('account')->get();
             return response()->json([
                 'isSuccess' => true,
                 'admissions' => $admissions,
@@ -38,200 +38,202 @@ class AdmissionsController extends Controller
     }
 
 
-    public function applyAdmission(Request $request)
-    {
-        try {
+   public function applyAdmission(Request $request)
+{
+    try {
+        $account = auth()->user();
+
+        // Validate only the fields provided by user
+        $validated = $request->validate([
             
+            'school_campus' => 'required|string|max:255',
+            'academic_year' => 'required|string|max:50',
+            'application_type' => 'required|string|max:50',
+            'classification' => 'required|string|max:50',
+            'grade_level' => 'required|string|max:50',
+            'academic_program' => 'required|string|max:255',
 
-            // Validate the request data
-            $validated = $request->validate([
-                'school_campus' => 'required|string|max:255',
-                'academic_year' => 'required|string|max:255',
-                'application_type' => 'required|string|max:50',
-                'classification' => 'required|string|max:50',
-                'grade_level' => 'nullable|string|max:50',
-                'academic_program' => 'required|string|max:255',
+            'strand' => 'nullable|string|max:50',
+            'lrn' => 'nullable|string|max:20',
+            'last_school_attended' => 'nullable|string|max:255',
+            'school_year' => 'required|string|max:50',
+            'remarks' => 'nullable|string|max:255',
 
-                // Personal Information
-                'first_name' => 'required|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'last_name' => 'required|string|max:50',
-                'gender' =>   'required|string|',
-                'birthdate' => 'required|date',
-                'birthplace' => 'required|string|max:255',
-                'email' => 'required|email|max:255',
-                'contact_number' => 'required|string|max:20',
-                'street_address' => 'required|string|max:255',
-                'province' => 'required|string|max:100',
-                'city' => 'required|string|max:100',
-                'barangay' => 'required|string|max:100',
+            // Files
+            'form_137' => 'nullable|file|mimes:pdf|max:2048',
+            'form_138' => 'nullable|file|mimes:pdf|max:2048',
+            'birth_certificate' => 'nullable|file|mimes:pdf|max:2048',
+            'good_moral' => 'nullable|file|mimes:pdf|max:2048',
+            'certificate_of_completion' => 'nullable|file|mimes:pdf|max:2048',
+        ]);
 
-                // Academic background 
-                'strand' => 'nullable|string|max:50',
-                'lrn' => 'nullable|string|max:20',
-                'last_school_attended' => 'nullable|string|max:255',
+        // Create a new admission record
+        $admission = admissions::create([
+            'account_id' => $account->id,
+            'school_campus' => $validated['school_campus'],
+            'academic_year' => $validated['academic_year'],
+            'application_type' => $validated['application_type'],
+            'classification' => $validated['classification'],
+            'grade_level' => $validated['grade_level'],
+            'academic_program' => $validated['academic_program'],
 
-                // System/processing fields
-                'school_year' => 'required|string|max:50',
-                'status' => 'nullable|string|max:50',
-                'remarks' => 'nullable|string|max:255',
+        // Auto-fill from account
+            'first_name' => $account->given_name,
+            'middle_name' => $account->middle_name,
+            'last_name' => $account->surname,
+            'gender' => $account->gender,
+            'birthdate' => $account->date_of_birth,
+            'birthplace' => $account->place_of_birth,
+            'email' => $account->email,
+            'contact_number' => $account->mobile_number,
+            'street_address' => $account->street_address,
+            'province' => $account->province,
+            'city' => $account->city,
+            'barangay' => $account->barangay,
 
+            // From validated request
+            'strand' => $validated['strand'],
+            'lrn' => $validated['lrn'],
+            'last_school_attended' => $validated['last_school_attended'],
+            'school_year' => $validated['school_year'],
+            'status' => 'pending',
+            'remarks' => $validated['remarks'] ?? null,
 
-                // Files
-                'form_137_path' => 'nullable|file|mimes:pdf|max:2048',
-                'form_138_path' => 'nullable|file|mimes:pdf|max:2048',
-                'birth_certificate_path' => 'nullable|file|mimes:pdf|max:2048',
-                'good_moral_path' => 'nullable|file|mimes:pdf|max:2048',
-                'certificate_of_completion_path' => 'nullable|file|mimes:pdf|max:2048',
-            ]);
+            // Files (uploaded paths)
+            'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
+            'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
+            'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
+            'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
+            'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
+        ]);
 
-            $account = auth()->user();
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission application submitted successfully.',
+            'admission' => $admission,
+        ], 201);
 
-            // Create a new admission record
-            $admission = admissions::create([
-                'account_id' => $account->id,
-                'school_campus' => $validated['school_campus'],
-                'academic_year' => $validated['academic_year'],
-                'application_type' => $validated['application_type'],
-                'classification' => $validated['classification'],
-                'grade_level' => $validated['grade_level'],
-                'academic_program' => $validated['academic_program'],
-
-
-                'first_name' => $validated['first_name'],
-                'middle_name' => $validated['middle_name'],
-                'last_name' => $validated['last_name'],
-                'gender' => $validated['gender'],
-                'birthdate' => $validated['birthdate'],
-                'birthplace' => $validated['birthplace'],
-                'email' => $validated['email'],
-                'contact_number' => $validated['contact_number'],
-                'street_address' => $validated['street_address'],
-                'province' => $validated['province'],
-                'city' => $validated['city'],
-                'barangay' => $validated['barangay'],
-
-                // Academic background
-                'strand' => $validated['strand'],
-                'lrn' => $validated['lrn'],
-                'last_school_attended' => $validated['last_school_attended'],
-
-
-                // System processing fields
-                'school_year' => $validated['school_year'],
-                'status' => 'pending', 
-                'remarks' => $validated['remarks'] ?? null,
-
-                // Files
-                'form_137_path' => $request->file('form_137_path') ? $request->file('form_137_path')->store('uploads', 'public') : null,
-                'form_138_path' => $request->file('form_138_path') ? $request->file('form_138_path')->store('uploads', 'public') : null,
-                'birth_certificate_path' => $request->file('birth_certificate_path') ? $request->file('birth_certificate_path')->store('uploads', 'public') : null,
-                'good_moral_path' => $request->file('good_moral_path') ? $request->file('good_moral_path')->store('uploads', 'public') : null,
-                'certificate_of_completion_path' => $request->file('certificate_of_completion_path') ? $request->file('certificate_of_completion_path')->store('uploads', 'public') : null,
-            ]);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission application submitted successfully.',
-                'admission' => $admission,
-            ], 201);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to submit admission application.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to submit admission application.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
     public function approveAdmission(Request $request, $id)
-    {
-        try {
-            $admission = admissions::findOrFail($id);
+{
+    try {
+        $approver = auth()->user(); // Authenticated user
+        $admission = admissions::findOrFail($id);
 
-            // Update status
-            $admission->status = 'approved';
-            $admission->save();
+        // Update status
+        $admission->status = 'approved';
+        $admission->status_by = $approver->id;
+        $admission->save();
 
-            // Generate random password
-            $password = Str::random(10);
-
-            // Create account
-            $account = new admissions();
-            $account->email = $admission->email;
-            $account->password = bcrypt($password);
-            $account->user_type_id = 3; // adjust if needed
-            $account->save();
-
-            // Send email (inline HTML)
-            Mail::html("
+        // Send email to applicant
+        Mail::html("
             <h2>Admission Approved</h2>
-            <p>Dear Applicant,</p>
-            <p>Your admission has been <strong>approved</strong>. Below are your login credentials:</p>
-            <p><strong>Email:</strong> {$admission->email}</p>
-            <p><strong>Password:</strong> {$password}</p>
-            <p>You can now access your account. Please change your password after logging in.</p>
-            <br>
-            <p>Thank you!</p>
+            <p>Dear {$admission->first_name},</p>
+            <p>We are pleased to inform you that your admission has been <strong>approved</strong>.</p>
+            <p>Please expect your examination form to be sent to you shortly.</p>
+            <p>Thank you for choosing our institution!</p>
         ", function ($message) use ($admission) {
-                $message->to($admission->email)
-                    ->subject('Your Admission Has Been Approved');
-            });
+            $message->to($admission->email)
+                ->subject('Your Admission Has Been Approved');
+        });
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission approved and email sent.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to approve admission.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission approved and notification email sent.',
+            'admission' => $admission,
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Admission not found.',
+        ], 404);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to approve admission.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
     
-    public function rejectAdmission(Request $request, $id)
-    {
-        try {
-            // Find the admission by ID
-            $admission = admissions::findOrFail($id);
+   public function rejectAdmission(Request $request, $id)
+{
+    try {
+        $rejector = auth()->user(); 
+        $admission = admissions::findOrFail($id);
 
-            // Update the admission status to rejected
-            $admission->status = 'rejected'; // assuming you have a status field
-            $admission->save();
+        // Update the admission status to rejected
+        $admission->status = 'rejected';
+        $admission->status_by = $rejector->id;
+        $admission->save();
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission rejected successfully.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to reject admission.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        // Send rejection email
+        Mail::html("
+            <h2>Admission Rejected</h2>
+            <p>Dear {$admission->first_name},</p>
+            <p>We regret to inform you that your admission application has been <strong>rejected</strong>.</p>
+            <p>If you believe this was an error or would like more information, please contact our admissions office.</p>
+            <br>
+            <p>Thank you for your interest.</p>
+        ", function ($message) use ($admission) {
+            $message->to($admission->email)
+                ->subject('Admission Application Status: Rejected');
+        });
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission rejected and email sent successfully.',
+            'admission' => $admission,
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Admission not found.',
+        ], 404);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to reject admission.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
+
+    //HELPERS
+    private function moveToPublicFolder($request, $fieldName, $prefix)
+{
+    if ($request->hasFile($fieldName)) {
+        $file = $request->file($fieldName);
+        $filename = $prefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+        // Save to public folder (e.g., public/admission_files/)
+        $file->move(public_path('admission_files'), $filename);
+
+        // Return relative path for DB
+        return 'admission_files/' . $filename;
+    }
+    return null;
+}
+
 }

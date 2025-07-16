@@ -169,13 +169,13 @@ class AccountsController extends Controller
     }
 
     // Method to change the user profile
- public function updateProfile(Request $request)
-{
+    public function updateProfile(Request $request)
+    {
     try {
-        $account = auth()->user(); // ✅ Authenticated user model
+        /** @var \App\Models\accounts $account */
+        $account = auth()->user();
 
         $validator = Validator::make($request->all(), [
-            // Personal Information
             'username' => 'sometimes|required|string|max:50',
             'surname' => 'sometimes|required|string|max:50',
             'given_name' => 'sometimes|required|string|max:50',
@@ -192,20 +192,17 @@ class AccountsController extends Controller
             'digital_literacy' => 'sometimes|required|string|max:50',
             'device' => 'sometimes|required|string|max:50',
 
-            // Address
             'street_address' => 'sometimes|required|string|max:255',
             'province' => 'sometimes|required|string|max:100',
             'city' => 'sometimes|required|string|max:100',
             'barangay' => 'sometimes|required|string|max:100',
 
-            // Other Info
             'nationality' => 'sometimes|required|string|max:50',
             'religion' => 'sometimes|required|string|max:50',
             'ethnic_affiliation' => 'nullable|string|max:50',
             'telephone_number' => 'nullable|string|max:15',
             'mobile_number' => 'sometimes|required|string|max:15',
 
-            // ✅ Email unique rule with ignore
             'email' => [
                 'sometimes',
                 'required',
@@ -213,33 +210,37 @@ class AccountsController extends Controller
                 'max:100',
                 Rule::unique('accounts', 'email')->ignore($account->id),
             ],
-            
+
             'is_4ps_member' => 'sometimes|required|boolean',
             'is_insurance_member' => 'sometimes|required|boolean',
             'vacation_status' => 'sometimes|required|string|max:50',
             'is_indigenous' => 'sometimes|required|boolean',
         ]);
-      
-;
-        
 
         if ($validator->fails()) {
             throw new ValidationException($validator);
         }
 
         $validated = $validator->validated();
-        if ($request->hasFile('profile_picture')) {
-        $imagePath = $request->file('profile_picture')->store('profile_pictures', 'public');
-        $validated['profile_picture'] = $imagePath;
-}
 
-        $account = accounts::findOrFail(auth()->id());
+        // ✅ Handle file upload
+        if ($request->hasFile('profile_picture')) {
+            $file = $request->file('profile_picture');
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('profile_pictures'), $filename);
+            $validated['profile_picture'] = 'profile_pictures/' . $filename;
+        }
+
+        // ✅ Now update everything in one go
         $account->update($validated);
 
         return response()->json([
             'isSuccess' => true,
             'message' => 'Profile updated successfully.',
             'accounts' => $account,
+            'profile_picture_url' => $account->profile_picture
+                ? asset($account->profile_picture)
+                : null,
         ]);
     } catch (ValidationException $e) {
         return response()->json([
@@ -254,8 +255,9 @@ class AccountsController extends Controller
             'error' => $e->getMessage(),
         ], 500);
     }
-}
+    }
 
+ 
 
 
     public function changePassword(Request $request)

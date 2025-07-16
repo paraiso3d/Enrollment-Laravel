@@ -10,6 +10,8 @@ class admissions extends Model
     use HasFactory;
     protected $table = 'admissions';
     protected $fillable = [
+        'approved_by',
+        'account_id',
         'school_campus',
         'academic_year',
         'application_type',
@@ -42,12 +44,20 @@ class admissions extends Model
         'remarks',
 
         //Files
-        'form_137_path',
-        'form_138_path',
-        'birth_certificate_path',
-        'good_moral_path',
-        'cortificate_of_completion_path',
+        'form_137',
+        'form_138',
+        'birth_certificate',
+        'good_moral',
+        'certificate_of_completion',
 
 
     ];
+
+    public function account()
+{
+    return $this->belongsTo(accounts::class, 'account_id')->select([
+        'id', 'email', 'given_name', 'surname', 'mobile_number', 'street_address', 'province', 'city', 'barangay'
+    ]);
+}
+
 }
