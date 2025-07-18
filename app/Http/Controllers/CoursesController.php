@@ -20,6 +20,9 @@ class CoursesController extends Controller
             // Validate the request data
             $validated = $request->validate([
                 'course_name' => 'required|string|max:100',
+                'course_type' => 'required|string|max:50',
+                'course_code' => 'required|string|max:10|unique:courses,course_code',
+                'strand' => 'nullable|string|max:50',
                 'course_description' => 'nullable|string|max:255',
                 'course_units' => 'required|integer|min:3',
             ]);
@@ -27,6 +30,9 @@ class CoursesController extends Controller
             // Create a new course
             $course = courses::create([
                 'course_name' => $validated['course_name'],
+                'course_code' => $validated['course_code'],
+                'course_type' => $validated['course_type'],
+                'strand' => $validated['strand'] ?? null,
                 'course_description' => $validated['course_description'] ?? null,
                 'course_units' => $validated['course_units'],
             ]);
@@ -72,6 +78,9 @@ class CoursesController extends Controller
             // Validate the request data
             $validated = $request->validate([
                 'course_name' => 'sometimes|required|string|max:100',
+                'course_type' => 'sometimes|required|string|max:50',
+                'course_code' => 'sometimes|required|string|max:10|unique:courses,course_code,' . $id,
+                'strand' => 'sometimes|nullable|string|max:50',
                 'course_description' => 'sometimes|nullable|string|max:255',
                 'course_units' => 'sometimes|required|integer|min:3',
             ]);
@@ -80,6 +89,9 @@ class CoursesController extends Controller
             // Update the course details
             $course->update([
                 'course_name' => $validated['course_name'] ?? $course->course_name,
+                'course_code' => $validated['course_code'] ?? $course->course_code,
+                'course_type' => $validated['course_type'] ?? $course->course_type,
+                'strand' => $validated['strand'] ?? $course->strand,
                 'course_description' => $validated['course_description'] ?? $course->course_description,
                 'course_units' => $validated['course_units'] ?? $course->course_units,
             ]);
@@ -154,5 +166,27 @@ class CoursesController extends Controller
             ], 500);
         }
     }
+
+    public function getCourseSubjects($id)
+{
+    try {
+        $course = courses::with('subjects')->findOrFail($id);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Subjects retrieved successfully.',
+            'course_name' => $course->course_name,
+            'subjects' => $course->subjects
+        ], 200);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve subjects.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
 
 }

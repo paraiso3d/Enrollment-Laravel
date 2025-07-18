@@ -22,7 +22,8 @@ class accounts extends Authenticatable
 
 
       protected $table = 'accounts';
-     protected $fillable = [
+      protected $fillable = [
+        'user_type',
         'profile_picture',
         'school_campus',
         'academic_year',

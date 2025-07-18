@@ -10,12 +10,18 @@ class enrollments extends Model
     use HasFactory;
     protected $table = 'enrollments';
     protected $fillable = [
-        'student_id',
-        'course_id',
-        'school_year_id',
-        'enrollment_date',
-        'semester',
-        'status',
-        'is_archive',
-    ];
+    'account_id',         // instead of 'student_id' if you're using the accounts table
+    'admission_id',       // optional, if connected to admissions
+    'course_id',
+    'section_id',
+    'semester',
+    'year_level',
+    'enrollment_status',
+    'is_irregular',
+    'date_enrolled',
+    'remarks',
+    'student_number',
+    'is_archived',
+];
+
 }

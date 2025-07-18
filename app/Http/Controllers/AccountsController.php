@@ -16,47 +16,64 @@ class AccountsController extends Controller
 {
 
     // Method to register a new account
-   public function getusers(Request $request)
-{
-    try {
-        // Get paginated users (10 per page)
-        $users = accounts::paginate(10);
+    public function getusers(Request $request)
+    {
+        try {
+            $query = accounts::query();
 
-         $users->getCollection()->transform(function ($user) {
-            return $user->makeHidden(['is_verified']);
-        });
+            // Search
+            if ($search = $request->input('search')) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('given_name', 'like', "%{$search}%")
+                        ->orWhere('surname', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('username', 'like', "%{$search}%");
+                });
+            }
 
-        return response()->json([
-            'isSuccess' => true,
-            'users' => $users->items(), // Actual user data for current page
-            'pagination' => [
-                'current_page' => $users->currentPage(),
-                'per_page' => $users->perPage(),
-                'total' => $users->total(),
-                'last_page' => $users->lastPage(),
-            ],
-        ], 200);
+            // Filter by user_type
+            if ($request->filled('user_type')) {
+                $query->where('user_type', $request->user_type);
+            }
 
-    } catch (Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to retrieve users.',
-            'error' => $e->getMessage(),
-        ], 500);
+            // Apply pagination and hide field
+            $users = $query->paginate(10)->through(function ($user) {
+                return $user->makeHidden(['is_verified']);
+            });
+
+            return response()->json([
+                'isSuccess' => true,
+                'users' => $users->items(),
+                'pagination' => [
+                    'current_page' => $users->currentPage(),
+                    'per_page' => $users->perPage(),
+                    'total' => $users->total(),
+                    'last_page' => $users->lastPage(),
+                ],
+            ], 200);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to retrieve users.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
+
 
     public function createUser(Request $request)
     {
         try {
             $validator = Validator::make($request->all(), [
-        
-                
+
+
                 //Personal Information
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'middle_initial' => 'nullable|string|max:5',
+                'user_type' => 'required|string',
                 'suffix' => 'nullable|string|max:10',
                 'date_of_birth' => 'required|date',
                 'place_of_birth' => 'required|string|max:100',
@@ -90,18 +107,19 @@ class AccountsController extends Controller
             }
 
             $validatedData = $validator->validated();
-            $plainPassword = Str::random(8); // you can use any length
-            $verificationCode = rand(100000, 999999); // or use Str::uuid()
+            $plainPassword = Str::random(8);
+            $verificationCode = rand(100000, 999999);
 
-            // Step 2: Add to validated data
+
             $validatedData['password'] = Hash::make($plainPassword);
-            $validatedData['is_verified'] = 0; // default not verified
-            $validatedData['verification_code'] = $verificationCode; // make sure this column exists
+            $validatedData['user_type'] = 'student';
+            $validatedData['is_verified'] = 0;
+            $validatedData['verification_code'] = $verificationCode;
 
-            // Step 3: Save the account
+
             $account = accounts::create($validatedData);
 
-            // Step 4: Send email
+
             Mail::raw("Welcome! Your password is: $plainPassword\nYour verification code is: $verificationCode", function ($message) use ($account) {
                 $message->to($account->email)
                     ->subject('Your Account Details');
@@ -128,10 +146,137 @@ class AccountsController extends Controller
         }
     }
 
+    public function createAdminAccount(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            // ✅ Only allow Super Admin
+            if (!$user || $user->usertype !== 'super_admin') {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized. Only super admins can create admin accounts.'
+                ], 403);
+            }
+
+            // Validate input fields
+            $validator = Validator::make($request->all(), [
+                'surname' => 'required|string|max:50',
+                'given_name' => 'required|string|max:50',
+                'middle_name' => 'nullable|string|max:50',
+                'middle_initial' => 'nullable|string|max:5',
+                'suffix' => 'nullable|string|max:10',
+                'email' => 'required|email|max:100|unique:accounts,email',
+                'mobile_number' => 'required|string|max:15',
+                'gender' => 'nullable|string|max:10',
+                'date_of_birth' => 'nullable|date',
+                'user_type' => 'nullable|string|in:admin,staff',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Validation failed',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $validatedData = $validator->validated();
+
+            // Generate a default random password
+            $plainPassword = Str::random(8);
+            $validatedData['password'] = Hash::make($plainPassword);
+
+            // Default usertype to 'admin' if not provided
+            $validatedData['usertype'] = $validatedData['user_type'] ?? 'admin';
+
+            // Mark as verified
+            $validatedData['is_verified'] = 1;
+            $validatedData['verification_code'] = null;
+
+            // Create the account
+            $account = accounts::create($validatedData);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Admin account created successfully.',
+                'account' => $account,
+                'default_password' => $plainPassword
+            ], 201);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to create admin account.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 
 
+    public function createInstructor(Request $request)
+    {
+        try {
+            $user = auth()->user();
 
-    // Method to verify the account using the verification code
+            // Restrict access to admin and super admin only
+            if (!in_array($user->user_type, ['admin', 'super admin'])) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized access. Only admin or super admin can create an instructor.'
+                ], 403);
+            }
+
+            $validator = Validator::make($request->all(), [
+                'surname' => 'required|string|max:50',
+                'given_name' => 'required|string|max:50',
+                'middle_name' => 'nullable|string|max:50',
+                'middle_initial' => 'nullable|string|max:5',
+                'suffix' => 'nullable|string|max:10',
+
+                'email' => 'required|email|max:100|unique:accounts,email',
+                'mobile_number' => 'required|string|max:15',
+
+                'gender' => 'nullable|string|in:Male,Female,Other',
+                'date_of_birth' => 'nullable|date',
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Validation failed.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $validated = $validator->validated();
+
+            // Generate a random password
+            $plainPassword = Str::random(8);
+
+            // Prepare data for insertion
+            $validated['password'] = Hash::make($plainPassword);
+            $validated['user_type'] = 'instructor';
+            $validated['is_verified'] = 1;
+            $validated['verification_code'] = null;
+
+            // Create the instructor account
+            $instructor = accounts::create($validated);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Instructor account created successfully.',
+                'account' => $instructor,
+                'default_password' => $plainPassword
+            ], 201);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to create instructor.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
     public function verifyAccount(Request $request)
     {
         try {
@@ -201,93 +346,91 @@ class AccountsController extends Controller
     // Method to change the user profile
     public function updateProfile(Request $request)
     {
-    try {
-        /** @var \App\Models\accounts $account */
-        $account = auth()->user();
+        try {
+            /** @var \App\Models\accounts $account */
+            $account = auth()->user();
 
-        $validator = Validator::make($request->all(), [
-            'username' => 'sometimes|required|string|max:50',
-            'surname' => 'sometimes|required|string|max:50',
-            'given_name' => 'sometimes|required|string|max:50',
-            'middle_name' => 'nullable|string|max:50',
-            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'middle_initial' => 'nullable|string|max:5',
-            'suffix' => 'nullable|string|max:10',
-            'date_of_birth' => 'sometimes|required|date',
-            'place_of_birth' => 'sometimes|required|string|max:100',
-            'gender' => 'sometimes|required|string|max:10',
-            'civil_status' => 'sometimes|required|string|max:20',
-            'internet_connectivity' => 'sometimes|required|string|max:50',
-            'learning_modality' => 'sometimes|required|string|max:50',
-            'digital_literacy' => 'sometimes|required|string|max:50',
-            'device' => 'sometimes|required|string|max:50',
+            $validator = Validator::make($request->all(), [
+                'username' => 'sometimes|required|string|max:50',
+                'surname' => 'sometimes|required|string|max:50',
+                'given_name' => 'sometimes|required|string|max:50',
+                'middle_name' => 'nullable|string|max:50',
+                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'middle_initial' => 'nullable|string|max:5',
+                'suffix' => 'nullable|string|max:10',
+                'date_of_birth' => 'sometimes|required|date',
+                'place_of_birth' => 'sometimes|required|string|max:100',
+                'gender' => 'sometimes|required|string|max:10',
+                'civil_status' => 'sometimes|required|string|max:20',
+                'internet_connectivity' => 'sometimes|required|string|max:50',
+                'learning_modality' => 'sometimes|required|string|max:50',
+                'digital_literacy' => 'sometimes|required|string|max:50',
+                'device' => 'sometimes|required|string|max:50',
 
-            'street_address' => 'sometimes|required|string|max:255',
-            'province' => 'sometimes|required|string|max:100',
-            'city' => 'sometimes|required|string|max:100',
-            'barangay' => 'sometimes|required|string|max:100',
+                'street_address' => 'sometimes|required|string|max:255',
+                'province' => 'sometimes|required|string|max:100',
+                'city' => 'sometimes|required|string|max:100',
+                'barangay' => 'sometimes|required|string|max:100',
 
-            'nationality' => 'sometimes|required|string|max:50',
-            'religion' => 'sometimes|required|string|max:50',
-            'ethnic_affiliation' => 'nullable|string|max:50',
-            'telephone_number' => 'nullable|string|max:15',
-            'mobile_number' => 'sometimes|required|string|max:15',
+                'nationality' => 'sometimes|required|string|max:50',
+                'religion' => 'sometimes|required|string|max:50',
+                'ethnic_affiliation' => 'nullable|string|max:50',
+                'telephone_number' => 'nullable|string|max:15',
+                'mobile_number' => 'sometimes|required|string|max:15',
 
-            'email' => [
-                'sometimes',
-                'required',
-                'email',
-                'max:100',
-                Rule::unique('accounts', 'email')->ignore($account->id),
-            ],
+                'email' => [
+                    'sometimes',
+                    'required',
+                    'email',
+                    'max:100',
+                    Rule::unique('accounts', 'email')->ignore($account->id),
+                ],
 
-            'is_4ps_member' => 'sometimes|required|boolean',
-            'is_insurance_member' => 'sometimes|required|boolean',
-            'vacation_status' => 'sometimes|required|string|max:50',
-            'is_indigenous' => 'sometimes|required|boolean',
-        ]);
+                'is_4ps_member' => 'sometimes|required|boolean',
+                'is_insurance_member' => 'sometimes|required|boolean',
+                'vacation_status' => 'sometimes|required|string|max:50',
+                'is_indigenous' => 'sometimes|required|boolean',
+            ]);
 
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
+            if ($validator->fails()) {
+                throw new ValidationException($validator);
+            }
+
+            $validated = $validator->validated();
+
+            // ✅ Handle file upload
+            if ($request->hasFile('profile_picture')) {
+                $file = $request->file('profile_picture');
+                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+                $file->move(public_path('profile_pictures'), $filename);
+                $validated['profile_picture'] = 'profile_pictures/' . $filename;
+            }
+
+            // ✅ Now update everything in one go
+            $account->update($validated);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Profile updated successfully.',
+                'accounts' => $account,
+                'profile_picture_url' => $account->profile_picture
+                    ? asset($account->profile_picture)
+                    : null,
+            ]);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to update profile.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        $validated = $validator->validated();
-
-        // ✅ Handle file upload
-        if ($request->hasFile('profile_picture')) {
-            $file = $request->file('profile_picture');
-            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-            $file->move(public_path('profile_pictures'), $filename);
-            $validated['profile_picture'] = 'profile_pictures/' . $filename;
-        }
-
-        // ✅ Now update everything in one go
-        $account->update($validated);
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Profile updated successfully.',
-            'accounts' => $account,
-            'profile_picture_url' => $account->profile_picture
-                ? asset($account->profile_picture)
-                : null,
-        ]);
-    } catch (ValidationException $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to update profile.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-    }
-
- 
 
 
     public function changePassword(Request $request)

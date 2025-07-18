@@ -56,46 +56,55 @@ class SectionsController extends Controller
         }
     }
 
-    public function addSection(Request $request)
-    {
-        try {
+  public function addSection(Request $request)
+{
+    try {
+        // Validate the request data
+        $validated = $request->validate([
+            'section_name' => 'required|string|max:100',
+            'course_id' => 'required|exists:courses,id',
+            'instructor_id' => 'required|exists:accounts,id',
+        ]);
 
-            // Validate the request data
-            $validated = $request->validate([
-                'section_name' => 'required|string|max:100',
-                'course_id' => 'required|exists:courses,id',
-                'school_year_id' => 'required|exists:school_years,id',
-                'instructor_id' => 'required|exists:accounts,id',
-            ]);
+        // Check for duplicate section under same course
+        $duplicate = sections::where('section_name', $validated['section_name'])
+            ->where('course_id', $validated['course_id'])
+            ->first();
 
-             $user = Auth::user();
-            // Create a new section
-            $section = sections::create([
-                'section_name' => $validated['section_name'],
-                'course_id' => $validated['course_id'],
-                'school_year_id' => $validated['school_year_id'],
-                'instructor_id' => $validated['instructor_id'],
-            ]);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Section added successfully.',
-                'section' => $section,
-            ], 201);
-        } catch (ValidationException $e) {
+        if ($duplicate) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to add section.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Section already exists under this course.',
+            ], 409); //
         }
+
+        // Create the new section
+        $section = sections::create([
+            'section_name' => $validated['section_name'],
+            'course_id' => $validated['course_id'],
+            'instructor_id' => $validated['instructor_id'],
+        ]);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Section added successfully.',
+            'section' => $section,
+        ], 201);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to add section.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     public function updateSection(Request $request, $id)
     {

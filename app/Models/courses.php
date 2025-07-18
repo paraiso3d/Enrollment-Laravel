@@ -11,9 +11,17 @@ class courses extends Model
     protected $table = 'courses';
     protected $fillable = [
         'course_name',
+        'course_code',
+        'course_type',
+        'strand',
         'course_description',
         'course_units',
         'is_archive',
     ];
+
+public function subjects()
+{
+    return $this->hasMany(subjects::class, 'course_id'); // NOT courses_id
+}
 
 }

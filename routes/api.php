@@ -11,6 +11,7 @@ use App\Http\Controllers\UserTypesController;
 use App\Http\Controllers\SchoolCampusController;
 use App\Http\Controllers\AdmissionsController;
 use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\SubjectsController;
 
 
 /*
@@ -23,7 +24,7 @@ use App\Http\Controllers\SocialAuthController;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
-// TO INTEGRATE
+// Done Integration
 Route::get('/login/google', [SocialAuthController::class, 'redirectToGoogle']);
 Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 
@@ -32,9 +33,9 @@ Route::get('/auth/github/callback', [SocialAuthController::class, 'handleGithubC
 // Admissions
 
 Route::post('createuser', [AccountsController::class, 'createUser']);
-
-
- Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
+Route::post('createadmin', [AccountsController::class, 'createAdminAccount']);
+Route::post('createinstructor',[AccountsController::class, 'createInstructor']);
+Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 // Login and Logout 
 Route::post('login', [AuthController::class, 'login']);
@@ -42,17 +43,43 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 });
 
+//Courses Management
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('getcourses', [CoursesController::class, 'getCourses']);
+    Route::get('/courses/{id}/subjects', [CoursesController::class, 'getCourseSubjects']);
+
+});
+
+// Subjects Management
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('getsubjects', [SubjectsController::class, 'getSubjects']);
+    Route::post('addsubject', [SubjectsController::class, 'addSubject']);
+    });
+
+
+
+
 // Create User
-Route::post('createuser', [AccountsController::class, 'createUser']);
-Route::get('getusers', [AccountsController::class, 'getUsers']);
-Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
+// Route::post('createuser', [AccountsController::class, 'createUser']);
+// Route::post('createadmin', [AccountsController::class, 'createAdminAccount']);
+// Route::post('getusers', [AccountsController::class, 'getUsers']);
+// Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
 
-// Admissions Management
-Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
-Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission'])->middleware('auth:sanctum');
-Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
-Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
+// // Admissions Management
+// Route::post('getadmissions', [AdmissionsController::class, 'getAdmissions']);
+// Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission'])->middleware('auth:sanctum');
+// Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
+// Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
 
+// //Enrellments Management
+// Route::middleware('auth:sanctum')->group(function () {
+//     Route::get('listenrollments', [EnrollmentsController::class, 'listEnrollments']);
+//     Route::post('storeenrollment', [EnrollmentsController::class, 'storeEnrollment']);
+//     Route::post('updateenrollment/{id}', [EnrollmentsController::class, 'updateEnrollment']);
+//     Route::post('deleteenrollment/{id}', [EnrollmentsController::class, 'deleteEnrollment']);
+//     Route::post('restoreenrollment/{id}', [EnrollmentsController::class, 'restoreEnrollment']);
+// });
 
 
 
@@ -94,7 +121,7 @@ Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmissi
 
 //   // Courses Management
 // Route::middleware('auth:sanctum')->group(function () {
-//     Route::post('addcourse', [CoursesController::class, 'addCourse']);
+    Route::post('addcourse', [CoursesController::class, 'addCourse']);
 //     Route::get('getcourses', [CoursesController::class, 'getCourses']);
 //     Route::post('updatecourse/{id}', [CoursesController::class, 'updateCourse']);
 //     Route::post('deletecourse/{id}', [CoursesController::class, 'deleteCourse']);
