@@ -12,6 +12,14 @@ use Illuminate\Support\Str;
 
 class SocialAuthController extends Controller
 {
+    public function redirectToGoogle()
+{
+    /** @var \Laravel\Socialite\Two\GoogleProvider $googleDriver */
+    $googleDriver = Socialite::driver('google');
+
+    return $googleDriver->stateless()->redirect();
+}
+
    public function handleGoogleCallback()
 {
     try {
