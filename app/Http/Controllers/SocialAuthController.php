@@ -35,7 +35,7 @@ class SocialAuthController extends Controller
                 'username' => $googleUser->getNickname() ?? Str::slug($googleUser->getName()),
                 'password' => Hash::make(Str::random(12)),
                 'is_verified' => 1,
-                'first_name' => $googleUser->user['given_name'] ?? '',
+                'given_name' => $googleUser->user['given_name'] ?? '',
                 'last_name' => $googleUser->user['surname'] ?? '',
             ]);
         }
