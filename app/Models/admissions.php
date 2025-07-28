@@ -18,7 +18,6 @@ class admissions extends Model
     'application_type',
     'classification',
     'grade_level', // optional for SHS
-    'course',   // new
 
     'first_name',
     'middle_name',

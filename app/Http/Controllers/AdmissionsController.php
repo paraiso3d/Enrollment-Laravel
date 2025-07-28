@@ -85,7 +85,6 @@ class AdmissionsController extends Controller
             'grade_level' => 'nullable|string|max:50',
             'application_type' => 'required|string|max:50',
             'classification' => 'required|string|max:50',
-            'course' => 'required|string',
 
             'last_school_attended' => 'nullable|string|max:255',
             'remarks' => 'nullable|string|max:255',
