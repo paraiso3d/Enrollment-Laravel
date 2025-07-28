@@ -25,6 +25,8 @@ use App\Http\Controllers\SubjectsController;
 |
 */
 // Done Integration
+
+Route::post('verifyaccount', [AccountsController::class, 'verifyAccount']);
 Route::get('/login/google', [SocialAuthController::class, 'redirectToGoogle']);
 Route::get('/login/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 

@@ -91,7 +91,7 @@ class AccountsController extends Controller
                 'ethnic_affiliation' => 'nullable|string|max:50',
                 'telephone_number' => 'nullable|string|max:15',
                 'mobile_number' => 'required|string|max:15',
-                'email' => 'required|email|max:100',
+                'email' => 'required|email|max:100|unique:accounts,email',
                 'is_4ps_member' => 'required|string',
                 'is_insurance_member' => 'required|string',
                 'is_vaccinated' => 'required|string',
