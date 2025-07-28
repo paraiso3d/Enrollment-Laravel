@@ -10,14 +10,15 @@ class admissions extends Model
     use HasFactory;
     protected $table = 'admissions';
    protected $fillable = [
-    'semester',
     'applicant_number',
     'account_id',
     'school_campus',
+    'academic_year',
+    'academic_program',
     'application_type',
     'classification',
     'grade_level', // optional for SHS
-    'course_id',   // new
+    'course',   // new
 
     'first_name',
     'middle_name',

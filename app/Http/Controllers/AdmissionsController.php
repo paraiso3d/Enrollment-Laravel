@@ -79,12 +79,12 @@ class AdmissionsController extends Controller
         $account = auth()->user();
 
         $validated = $request->validate([
-            'semester' => 'nullable|string|max:50',
+            'academic_program' => 'required|string|max:100',
             'school_campus' => 'required|string|max:255',
-            'school_year' => 'required|string|max:50',
+            'academic_year' => 'required|string|max:50',
+            'grade_level' => 'nullable|string|max:50',
             'application_type' => 'required|string|max:50',
             'classification' => 'required|string|max:50',
-            'academic_program' => 'required|string|max:100',
             'course' => 'required|string',
 
             'last_school_attended' => 'nullable|string|max:255',
