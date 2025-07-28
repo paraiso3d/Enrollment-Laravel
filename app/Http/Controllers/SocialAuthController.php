@@ -50,7 +50,7 @@ class SocialAuthController extends Controller
                 'isSuccess' => true,
                 'message' => 'Google login successful',
                 'token' => $token,
-                'user' => $user->makeHidden(['password', 'created_at', 'updated_at']),
+                'user' => $user->makeHidden(['created_at', 'updated_at']),
             ]);
         } catch (\Throwable $e) {
             return response()->json([
