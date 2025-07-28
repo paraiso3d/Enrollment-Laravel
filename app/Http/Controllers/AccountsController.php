@@ -73,7 +73,7 @@ class AccountsController extends Controller
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'middle_initial' => 'nullable|string|max:5',
-                'user_type' => 'required|string',
+                'user_type' => 'string',
                 'suffix' => 'nullable|string|max:10',
                 'date_of_birth' => 'required|date',
                 'place_of_birth' => 'required|string|max:100',
@@ -92,10 +92,11 @@ class AccountsController extends Controller
                 'telephone_number' => 'nullable|string|max:15',
                 'mobile_number' => 'required|string|max:15',
                 'email' => 'required|email|max:100',
-                'is_4ps_member' => 'required|boolean',
-                'is_insurance_member' => 'required|boolean',
+                'is_4ps_member' => 'required|string',
+                'is_insurance_member' => 'required|string',
                 'is_vaccinated' => 'required|string',
-                'is_indigenous' => 'required|boolean',
+                'is_indigenous' => 'required|string',
+                'is_admitted'=> 'string',
             ]);
 
             if ($validator->fails()) {
