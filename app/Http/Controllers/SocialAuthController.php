@@ -23,7 +23,9 @@ class SocialAuthController extends Controller
    public function handleGoogleCallback()
 {
     try {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+          /** @var \Laravel\Socialite\Two\GithubProvider $provider */
+            $provider = Socialite::driver('google');
+            $googleUser = $provider->stateless()->user();
 
         $user = accounts::where('email', $googleUser->getEmail())->first();
 
