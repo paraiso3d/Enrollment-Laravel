@@ -98,7 +98,7 @@ class AccountsController extends Controller
                 'email' => 'required|email|max:100',
                 'is_4ps_member' => 'required|boolean',
                 'is_insurance_member' => 'required|boolean',
-                'vacation_status' => 'required|string|max:50',
+                'is_vaccinated' => 'required|string',
                 'is_indigenous' => 'required|boolean',
             ]);
 

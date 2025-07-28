@@ -46,6 +46,7 @@ Route::middleware('auth:sanctum')->group(function () {
 //Courses Management
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('getcourses', [CoursesController::class, 'getCourses']);
+    Route::post('addcourse', [CoursesController::class, 'addCourse']);
     Route::get('/courses/{id}/subjects', [CoursesController::class, 'getCourseSubjects']);
 
 });
@@ -121,7 +122,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 //   // Courses Management
 // Route::middleware('auth:sanctum')->group(function () {
-    Route::post('addcourse', [CoursesController::class, 'addCourse']);
+    
 //     Route::get('getcourses', [CoursesController::class, 'getCourses']);
 //     Route::post('updatecourse/{id}', [CoursesController::class, 'updateCourse']);
 //     Route::post('deletecourse/{id}', [CoursesController::class, 'deleteCourse']);

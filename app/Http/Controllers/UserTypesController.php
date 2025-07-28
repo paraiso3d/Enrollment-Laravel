@@ -36,7 +36,15 @@ class UserTypesController extends Controller
     public function createUserType(Request $request)
     {
         try {
-            
+            $user = Auth::user();
+            // Check if user is authenticated and is admin
+            if (!$user || $user->user_type !== ['admin' ,'super admin']) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized access.',
+                ], 403);
+            }
+
             // Validate the request data
             $validator = Validator::make($request->all(), [
                  'role_name' => 'required|string|max:255|unique:user_types,role_name',
