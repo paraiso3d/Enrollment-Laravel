@@ -84,12 +84,7 @@ class SocialAuthController extends Controller
 
             $token = $user->createToken('github-token')->plainTextToken;
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'GitHub login successful',
-                'token' => $token,
-                'user' => $user->makeHidden(['password', 'created_at', 'updated_at']),
-            ]);
+          return redirect("https://enrollmentsystemproject.vercel.app/oauth-callback2?token=$token&user=" . urlencode(json_encode($user)));
         } catch (\Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
