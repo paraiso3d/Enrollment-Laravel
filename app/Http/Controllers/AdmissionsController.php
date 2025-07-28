@@ -78,6 +78,8 @@ class AdmissionsController extends Controller
     try {
         $account = auth()->user();
 
+        $account->update(['is_admitted' => 1]);
+
         $validated = $request->validate([
             'academic_program' => 'required|string|max:100',
             'school_campus' => 'required|string|max:255',
