@@ -116,7 +116,7 @@ class AdmissionsController extends Controller
             'middle_name' => $account->middle_name ?? '',
             'last_name' => $account->surname ?? '',
             'gender' => $account->gender ?? '',
-'birthdate' => isset($account->date_of_birth) ? date('Y-m-d', strtotime($account->date_of_birth)) : null,
+            'birthdate' => isset($account->date_of_birth) ? date('Y-m-d', strtotime($account->date_of_birth)) : null,
             'birthplace' => $account->place_of_birth ?? '',
             'email' => $account->email ?? '',
             'contact_number' => $account->mobile_number ?? '',

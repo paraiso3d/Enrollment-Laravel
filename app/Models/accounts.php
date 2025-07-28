@@ -62,5 +62,6 @@ class accounts extends Authenticatable
         'password',
         'verification_code',
         'is_verified',
+        'is_admitted'
     ];
 }
