@@ -44,6 +44,7 @@ class admissions extends Model
     'birth_certificate_path',
     'good_moral_path',
     'certificate_of_completion_path',
+    'is_admitted', // New field to track admission status
 ];
 
 
