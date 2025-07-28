@@ -112,7 +112,7 @@ class AdmissionsController extends Controller
             'classification' => $validated['classification'],
             'academic_program' => $validated['academic_program'],
 
-            'first_name' => $account->given_name,
+           'first_name' => $account->given_name ?? '',
             'middle_name' => $account->middle_name,
             'last_name' => $account->surname,
             'gender' => $account->gender,
