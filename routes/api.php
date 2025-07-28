@@ -71,7 +71,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
 // // Admissions Management
 // Route::post('getadmissions', [AdmissionsController::class, 'getAdmissions']);
-// Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission'])->middleware('auth:sanctum');
+Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission'])->middleware('auth:sanctum');
 // Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
 // Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
 
