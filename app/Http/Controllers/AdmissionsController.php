@@ -102,13 +102,13 @@ class AdmissionsController extends Controller
         $admission = admissions::create([
             'account_id' => $account->id,
             'applicant_number' => $applicantNumber,
+            'academic_year' => $validated['academic_year'],
+            'grade_level' => $validated['grade_level'] ?? null, // Optional for SH
             'semester' => $validated['semester'] ?? null,
             'school_campus' => $validated['school_campus'],
-            'school_year' => $validated['school_year'],
             'application_type' => $validated['application_type'],
             'classification' => $validated['classification'],
             'academic_program' => $validated['academic_program'],
-            'course' => $validated['course'],
 
             'first_name' => $account->given_name,
             'middle_name' => $account->middle_name,
