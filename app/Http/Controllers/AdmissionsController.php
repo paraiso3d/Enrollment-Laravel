@@ -71,6 +71,8 @@ class AdmissionsController extends Controller
 
 
 
+
+
    public function applyAdmission(Request $request)
 {
     try {
@@ -82,18 +84,17 @@ class AdmissionsController extends Controller
             'school_year' => 'required|string|max:50',
             'application_type' => 'required|string|max:50',
             'classification' => 'required|string|max:50',
-            'course_id' => 'required|exists:courses,id',
+            'academic_program' => 'required|string|max:100',
+            'course' => 'required|string',
 
-            'strand' => 'nullable|string|max:50',
-            'lrn' => 'nullable|string|max:20',
             'last_school_attended' => 'nullable|string|max:255',
             'remarks' => 'nullable|string|max:255',
 
-            'form_137' => 'nullable|file|mimes:pdf|max:2048',
-            'form_138' => 'nullable|file|mimes:pdf|max:2048',
-            'birth_certificate' => 'nullable|file|mimes:pdf|max:2048',
-            'good_moral' => 'nullable|file|mimes:pdf|max:2048',
-            'certificate_of_completion' => 'nullable|file|mimes:pdf|max:2048',
+            'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
         ]);
 
         $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
@@ -107,7 +108,8 @@ class AdmissionsController extends Controller
             'school_year' => $validated['school_year'],
             'application_type' => $validated['application_type'],
             'classification' => $validated['classification'],
-            'course_id' => $validated['course_id'],
+            'academic_program' => $validated['academic_program'],
+            'course' => $validated['course'],
 
             'first_name' => $account->given_name,
             'middle_name' => $account->middle_name,
@@ -122,8 +124,6 @@ class AdmissionsController extends Controller
             'city' => $account->city,
             'barangay' => $account->barangay,
 
-            'strand' => $validated['strand'],
-            'lrn' => $validated['lrn'],
             'last_school_attended' => $validated['last_school_attended'],
             'status' => 'pending',
             'remarks' => $validated['remarks'] ?? null,
