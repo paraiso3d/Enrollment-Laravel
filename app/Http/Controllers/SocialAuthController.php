@@ -12,54 +12,37 @@ use Illuminate\Support\Str;
 
 class SocialAuthController extends Controller
 {
-    public function redirectToGoogle()
-    {
-        /** @var \Laravel\Socialite\Two\GoogleProvider $googleDriver */
-        $googleDriver = Socialite::driver('google');
+   public function handleGoogleCallback()
+{
+    try {
+        $googleUser = Socialite::driver('google')->stateless()->user();
 
-        return $googleDriver->stateless()->redirect();
-    }
-    public function handleGoogleCallback()
-    {
-        try {
-            /** @var \Laravel\Socialite\Two\GoogleProvider $googleDriver */
-            $googleDriver = Socialite::driver('google');
+        $user = accounts::where('email', $googleUser->getEmail())->first();
 
-            // ✅ Get user details from Google
-            $googleUser = $googleDriver->stateless()->user();
-
-            // Check if user already exists
-            $user = accounts::where('email', $googleUser->getEmail())->first();
-
-            if (!$user) {
-                // If user doesn't exist, create new account
-                $user = accounts::create([
-                    'email' => $googleUser->getEmail(),
-                    'username' => $googleUser->getNickname() ?? Str::slug($googleUser->getName()),
-                    'password' => Hash::make(Str::random(12)), // dummy password
-                    'is_verified' => 1,
-                    'first_name' => $googleUser->user['given_name'] ?? '',
-                    'last_name' => $googleUser->user['surname'] ?? '',
-                ]);
-            }
-
-            // Generate token
-            $token = $user->createToken('google-token')->plainTextToken;
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Google login successful',
-                'token' => $token,
-                'user' => $user->makeHidden(['created_at', 'updated_at']),
+        if (!$user) {
+            $user = accounts::create([
+                'email' => $googleUser->getEmail(),
+                'username' => $googleUser->getNickname() ?? Str::slug($googleUser->getName()),
+                'password' => Hash::make(Str::random(12)),
+                'is_verified' => 1,
+                'first_name' => $googleUser->user['given_name'] ?? '',
+                'last_name' => $googleUser->user['surname'] ?? '',
             ]);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Google login failed.',
-                'error' => $e->getMessage(),
-            ], 500);
         }
+
+        $token = $user->createToken('google-token')->plainTextToken;
+
+        // 👇 Redirect to frontend with token & user info
+        return redirect()->to("https://enrollmentsystemproject.vercel.app/oauth-callback?token={$token}&user=" . urlencode(json_encode($user->makeHidden(['created_at', 'updated_at']))));
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Google login failed.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
 
 
