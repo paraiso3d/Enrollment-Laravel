@@ -79,10 +79,6 @@ class AccountsController extends Controller
                 'place_of_birth' => 'required|string|max:100',
                 'gender' => 'required|string|max:10',
                 'civil_status' => 'required|string|max:20',
-                'internet_connectivity' => 'required|string|max:50',
-                'learning_modality' => 'required|string|max:50',
-                'digital_literacy' => 'required|string|max:50',
-                'device' => 'required|string|max:50',
 
                 //  Dropdown inputs
                 'street_address' => 'required|string|max:255',
