@@ -73,7 +73,7 @@ class AccountsController extends Controller
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'middle_initial' => 'nullable|string|max:5',
-                'user_type' => 'string',
+                'user_type' => 'nullable|string',
                 'suffix' => 'nullable|string|max:10',
                 'date_of_birth' => 'required|date',
                 'place_of_birth' => 'required|string|max:100',
