@@ -84,7 +84,7 @@ public function sendManualAdmissionEmail(Request $request)
         }
 
         $firstName = $admission->first_name;
-        $program = $admission->program;
+        $program = $admission->academic_program;
 
         $htmlContent = "
             <div style='font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;'>
@@ -266,7 +266,7 @@ public function sendManualAdmissionEmail(Request $request)
 
 
 
-   public function approveAdmission(Request $request, $id)
+  public function approveAdmission(Request $request, $id)
 {
     try {
         $approver = auth()->user();
@@ -280,23 +280,38 @@ public function sendManualAdmissionEmail(Request $request)
 
         $admission = admissions::findOrFail($id);
 
-        // Update admission status and is_admitted flag
         $admission->status = 'approved';
         $admission->status_by = $approver->id;
         $admission->is_admitted = 1;
         $admission->save();
 
-        // Send email to applicant
+        // Dynamic data
+        $firstName = $admission->first_name ?? 'Applicant';
+        $email = $admission->email ?? 'no-reply@example.com';
         $course = $admission->academic_program ?? 'your chosen program';
 
-        Mail::html('
-            <h2>Admission Approved</h2>
-            <p>Dear ' . e($admission->first_name ?? 'Applicant') . ',</p>
-            <p>We are pleased to inform you that your admission to the <strong>' . e($course) . '</strong> program has been <strong>approved</strong>.</p>
-            <p>Thank you for choosing our institution!</p>
-        ', function ($message) use ($admission) {
-            $message->to($admission->email ?? 'no-reply@example.com')
-                    ->subject('Your Admission Has Been Approved');
+        // HTML Email
+        $html = '
+            <div style="font-family: Arial, sans-serif; color: #333;">
+                <div style="text-align: center; padding: 10px;">
+                    <img src="https://yourdomain.com/logo.png" alt="Logo" style="max-height: 60px;">
+                </div>
+                <div style="padding: 20px;">
+                    <h2 style="color: #2c3e50;">Congratulations, ' . e($firstName) . '!</h2>
+                    <p>We are thrilled to inform you that your application for the <strong>' . e($course) . '</strong> program has been <span style="color: green;"><strong>approved</strong></span>.</p>
+                    <p>We look forward to welcoming you to our institution.</p>
+                    <p>Thank you for choosing us!</p>
+                </div>
+                <hr style="border: none; border-top: 1px solid #ccc;">
+                <div style="text-align: center; font-size: 12px; color: #888; padding: 10px;">
+                    &copy; ' . date('Y') . ' Your School Name. All rights reserved.
+                </div>
+            </div>
+        ';
+
+        Mail::html($html, function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('🎉 Your Admission Has Been Approved');
         });
 
         return response()->json([
@@ -322,49 +337,64 @@ public function sendManualAdmissionEmail(Request $request)
 
 
 
-    public function rejectAdmission(Request $request, $id)
-    {
-        try {
-            $rejector = auth()->user();
-            $admission = admissions::findOrFail($id);
 
-            // Update the admission status to rejected
-            $admission->status = 'rejected';
-            $admission->status_by = $rejector->id;
-            $admission->save();
+ public function rejectAdmission(Request $request, $id)
+{
+    try {
+        $rejector = auth()->user();
+        $admission = admissions::findOrFail($id);
 
-            // Send rejection email
-           Mail::html("
-            <h2>Admission Rejected</h2>
-            <p>Dear " . htmlspecialchars($admission->first_name ?? 'Applicant') . ",</p>
-            <p>We regret to inform you that your admission application has been <strong>rejected</strong>.</p>
-            <p>If you believe this was an error or would like more information, please contact our admissions office.</p>
-            <br>
-            <p>Thank you for your interest.</p>
-        ", function ($message) use ($admission) {
+        // Update admission status
+        $admission->status = 'rejected';
+        $admission->status_by = $rejector->id;
+        $admission->save();
+
+        // HTML Email content
+        $htmlContent = "
+            <div style='font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #ddd;'>
+                <div style='text-align: center; margin-bottom: 20px;'>
+                    <img src='" . asset('storage/logo.png') . "' alt='Institution Logo' style='max-height: 80px;'>
+                </div>
+
+                <h2 style='color: #e53e3e;'>Admission Rejected</h2>
+                <p>Dear <strong>" . e($admission->first_name ?? 'Applicant') . "</strong>,</p>
+                <p>We regret to inform you that your admission application has been <strong>rejected</strong>.</p>
+                <p>If you believe this was an error or need further assistance, please contact our admissions office.</p>
+
+                <br>
+                <p style='color: #718096;'>Thank you for your interest in our institution.</p>
+
+                <hr style='margin: 30px 0;'>
+                <footer style='text-align: center; font-size: 12px; color: #a0aec0;'>
+                    &copy; " . date('Y') . " Your Institution Name. All rights reserved.
+                </footer>
+            </div>
+        ";
+
+        // Send rejection email
+        Mail::html($htmlContent, function ($message) use ($admission) {
             $message->to($admission->email)
-                ->subject('Admission Application Status: Rejected');
+                    ->subject('Admission Application Status: Rejected');
         });
 
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission rejected and email sent successfully.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to reject admission.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission rejected and email sent successfully.',
+            'admission' => $admission,
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Admission not found.',
+        ], 404);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to reject admission.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
 
 
