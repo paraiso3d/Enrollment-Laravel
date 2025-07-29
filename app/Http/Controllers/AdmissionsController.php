@@ -63,6 +63,67 @@ class AdmissionsController extends Controller
 }
 
 
+public function sendManualAdmissionEmail(Request $request)
+{
+    $request->validate([
+        'emails' => 'required|array',
+        'emails.*' => 'required|email',
+        'custom_message' => 'nullable|string',
+    ]);
+
+    $customMessage = $request->input('custom_message', 'Please check your email regularly for further instructions.');
+    $logoUrl = asset('images/school_logo.png');
+    $failedEmails = [];
+
+    foreach ($request->emails as $email) {
+        $admission = admissions::where('email', $email)->first();
+
+        if (!$admission) {
+            $failedEmails[] = $email;
+            continue;
+        }
+
+        $firstName = $admission->first_name;
+        $program = $admission->program;
+
+        $htmlContent = "
+            <div style='font-family: Arial, sans-serif; padding: 20px; background-color: #f9f9f9;'>
+                <div style='text-align: center; margin-bottom: 30px;'>
+                    <img src='{$logoUrl}' alt='School Logo' style='height: 80px;' />
+                </div>
+                <div style='background-color: #ffffff; padding: 30px; border-radius: 10px;'>
+                    <h2 style='color: #2d3748;'>Admission Examination Link</h2>
+                    <p>Dear <strong>" . e($firstName) . "</strong>,</p>
+                    <p>You are invited to take the entrance examination for the 
+                    <strong>" . e($program) . "</strong> program.</p>
+                    <p>" . nl2br(e($customMessage)) . "</p>
+                    <p style='margin-top: 20px;'>Good luck, and we look forward to seeing you succeed!</p>
+                </div>
+                <div style='text-align: center; margin-top: 30px; font-size: 12px; color: #888888;'>
+                    <p>&copy; " . date('Y') . " Your School Name. All rights reserved.</p>
+                    <p>123 University St., City, Country | (123) 456-7890</p>
+                </div>
+            </div>
+        ";
+
+        Mail::html($htmlContent, function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('Your Admission Examination Link');
+        });
+    }
+
+    return response()->json([
+        'isSuccess' => count($failedEmails) === 0,
+        'message' => count($failedEmails) === 0 
+            ? 'Emails sent successfully.'
+            : 'Some emails failed to send because no admission record was found.',
+        'failed' => $failedEmails
+    ]);
+}
+
+
+
+
 
 
 
