@@ -5,61 +5,61 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class admissions extends Model
+class Admissions extends Model
 {
     use HasFactory;
+
     protected $table = 'admissions';
-   protected $fillable = [
-    'applicant_number',
-    'account_id',
-    'school_campus',
-    'academic_year',
-    'academic_program',
-    'application_type',
-    'classification',
-    'grade_level', // optional for SHS
 
-    'first_name',
-    'middle_name',
-    'last_name',
-    'gender',
-    'birthdate',
-    'birthplace',
-    'email',
-    'contact_number',
-    'street_address',
-    'province',
-    'city',
-    'barangay',
+    protected $fillable = [
+        'account_id',
+        'applicant_number',
+        'academic_year',
+        'grade_level',
 
-    'lrn',
-    'last_school_attended',
+        'school_campus',
+        'application_type',
+        'classification',
+        'academic_program',
 
-    'school_year',
-    'status',
-    'remarks',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'suffix',
+        'gender',
+        'birthdate',
+        'birthplace',
+        'civil_status',
+        'email',
+        'contact_number',
+        'street_address',
+        'province',
+        'city',
+        'barangay',
 
-    'form_137_path',
-    'form_138_path',
-    'birth_certificate_path',
-    'good_moral_path',
-    'certificate_of_completion_path',
-    'is_admitted', // New field to track admission status
-];
+        'nationality',
+        'religion',
+        'ethnic_affiliation',
+        'telephone_number',
+        'is_4ps_member',
+        'is_insurance_member',
+        'is_vaccinated',
+        'is_indigenous',
 
+        'last_school_attended',
+        'remarks',
+        'status',
 
+        'form_137',
+        'form_138',
+        'birth_certificate',
+        'good_moral',
+        'certificate_of_completion',
+    ];
+
+    // Relationship to Account (User)
     public function account()
-{
-    return $this->belongsTo(accounts::class, 'account_id')->select([
-        'id', 'email', 'given_name', 'surname', 'mobile_number', 'street_address', 'province', 'city', 'barangay'
-    ]);
-    
-}
-
-public function course()
-{
-    return $this->belongsTo(courses::class);
-}
-
-
+    {
+        return $this->belongsTo(Account::class, 'account_id');
+    }
 }

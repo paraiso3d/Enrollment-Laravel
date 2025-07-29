@@ -70,9 +70,9 @@ Route::middleware('auth:sanctum')->group(function () {
 // Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
 
 // // Admissions Management
-// Route::post('getadmissions', [AdmissionsController::class, 'getAdmissions']);
-Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission'])->middleware('auth:sanctum');
-// Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
+Route::post('getadmissions', [AdmissionsController::class, 'getAdmissions']);
+Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
+Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
 // Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
 
 // //Enrellments Management

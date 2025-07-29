@@ -13,78 +13,96 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Models\accounts;
+use Illuminate\Validation\Rule;
 use Throwable;
 
 
 
 class AdmissionsController extends Controller
 {
-    public function getAdmissions(Request $request)
-    {
-        try {
-            $query = admissions::with('account', 'course')
-                ->where('status', '!=', 'archived'); // Exclude archived admissions
-
-
-            if ($request->has('search')) {
-                $search = $request->search;
-                $query->where(function ($q) use ($search) {
-                    $q->where('school_campus', 'like', "%$search%")
-                        ->orWhere('academic_year', 'like', "%$search%")
-                        ->orWhereHas('account', function ($q2) use ($search) {
-                            $q2->where('given_name', 'like', "%$search%")
-                                ->orWhere('surname', 'like', "%$search%")
-                                ->orWhere('email', 'like', "%$search%");
-                        });
-                });
-            }
-
-            if ($request->has('status')) {
-                $query->where('status', $request->status);
-            }
-
-            if ($request->has('school_campus')) {
-                $query->where('school_campus', $request->school_campus);
-            }
-
-            // 🌀 Paginate results
-            $admissions = $query->paginate(10);
-
-            return response()->json([
-                'isSuccess' => true,
-                'admissions' => $admissions->items(),
-                'pagination' => [
-                    'current_page' => $admissions->currentPage(),
-                    'per_page' => $admissions->perPage(),
-                    'total' => $admissions->total(),
-                    'last_page' => $admissions->lastPage(),
-                ],
-            ], 200);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve admissions.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
-
-
-
-
-   public function applyAdmission(Request $request)
+  public function getAdmissions(Request $request)
 {
     try {
-        $account = auth()->user();
+        $query = admissions::where('status', '!=', 'archived');
 
-        $account->update(['is_admitted' => 1]);
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('school_campus', 'like', "%$search%")
+                    ->orWhere('academic_year', 'like', "%$search%");
+            });
+        }
 
+        if ($request->has('status')) {
+            $query->where('status', $request->status);
+        }
+
+        if ($request->has('school_campus')) {
+            $query->where('school_campus', $request->school_campus);
+        }
+
+        $admissions = $query->paginate(10);
+
+        return response()->json([
+            'isSuccess' => true,
+            'admissions' => $admissions->items(),
+            'pagination' => [
+                'current_page' => $admissions->currentPage(),
+                'per_page' => $admissions->perPage(),
+                'total' => $admissions->total(),
+                'last_page' => $admissions->lastPage(),
+            ],
+        ]);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve admissions.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+
+
+
+  public function applyAdmission(Request $request)
+{
+    try {
         $validated = $request->validate([
+            'surname' => 'required|string|max:50',
+            'given_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'middle_initial' => 'nullable|string|max:5',
+            'user_type' => 'nullable|string',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'required|string|max:100',
+            'gender' => 'required|string|max:10',
+            'civil_status' => 'required|string|max:20',
+
+            'street_address' => 'required|string|max:255',
+            'province' => 'required|string|max:100',
+            'city' => 'required|string|max:100',
+            'barangay' => 'required|string|max:100',
+
+            'nationality' => 'required|string|max:50',
+            'religion' => 'required|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'required|string|max:15',
+            'email' => 'required|email|max:100|unique:admissions,email',
+
+            'is_4ps_member' => 'required|string',
+            'is_insurance_member' => 'required|string',
+            'is_vaccinated' => 'required|string',
+            'is_indigenous' => 'required|string',
+
             'academic_program' => 'required|string|max:100',
             'school_campus' => 'required|string|max:255',
             'academic_year' => 'required|string|max:50',
             'grade_level' => 'nullable|string|max:50',
+            'semester' => 'nullable|string|max:50',
             'application_type' => 'required|string|max:50',
             'classification' => 'required|string|max:50',
 
@@ -100,34 +118,45 @@ class AdmissionsController extends Controller
 
         $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
 
-        // ✅ Save the admission record
         $admission = admissions::create([
-            'account_id' => $account->id,
+            // You can set `account_id` to null or pass from frontend if needed
+            'account_id' => null,
             'applicant_number' => $applicantNumber,
             'academic_year' => $validated['academic_year'],
-            'grade_level' => $validated['grade_level'] ?? null, // Optional for SH
+            'grade_level' => $validated['grade_level'] ?? null,
             'semester' => $validated['semester'] ?? null,
             'school_campus' => $validated['school_campus'],
             'application_type' => $validated['application_type'],
             'classification' => $validated['classification'],
             'academic_program' => $validated['academic_program'],
 
-           'first_name' => $account->given_name ?? '',
-            'middle_name' => $account->middle_name ?? '',
-            'last_name' => $account->surname ?? '',
-            'gender' => $account->gender ?? '',
-            'birthdate' => isset($account->date_of_birth) ? date('Y-m-d', strtotime($account->date_of_birth)) : null,
-            'birthplace' => $account->place_of_birth ?? '',
-            'email' => $account->email ?? '',
-            'contact_number' => $account->mobile_number ?? '',
-            'street_address' => $account->street_address ?? '',
-            'province' => $account->province ?? '',
-            'city' => $account->city ?? '',
-            'barangay' => $account->barangay ?? '',
+            'first_name' => $validated['given_name'],
+            'middle_name' => $validated['middle_name'] ?? '',
+            'last_name' => $validated['surname'],
+            'suffix' => $validated['suffix'] ?? '',
+            'gender' => $validated['gender'],
+            'birthdate' => $validated['date_of_birth'],
+            'birthplace' => $validated['place_of_birth'],
+            'civil_status' => $validated['civil_status'],
+            'email' => $validated['email'],
+            'contact_number' => $validated['mobile_number'],
+            'street_address' => $validated['street_address'],
+            'province' => $validated['province'],
+            'city' => $validated['city'],
+            'barangay' => $validated['barangay'],
 
-            'last_school_attended' => $validated['last_school_attended'],
-            'status' => 'pending',
+            'nationality' => $validated['nationality'],
+            'religion' => $validated['religion'],
+            'ethnic_affiliation' => $validated['ethnic_affiliation'] ?? null,
+            'telephone_number' => $validated['telephone_number'] ?? null,
+            'is_4ps_member' => $validated['is_4ps_member'],
+            'is_insurance_member' => $validated['is_insurance_member'],
+            'is_vaccinated' => $validated['is_vaccinated'],
+            'is_indigenous' => $validated['is_indigenous'],
+
+            'last_school_attended' => $validated['last_school_attended'] ?? null,
             'remarks' => $validated['remarks'] ?? null,
+            'status' => 'pending',
 
             'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
             'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
@@ -136,11 +165,29 @@ class AdmissionsController extends Controller
             'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
         ]);
 
+        $course = $validated['academic_program'];
+        $firstName = $validated['given_name'] ?? 'Applicant';
+        $email = $validated['email'];
+
+        Mail::html('
+            <h2>Admission Application Received</h2>
+            <p>Dear ' . e($firstName) . ',</p>
+            <p>Thank you for applying to our institution.</p>
+            <p>Your application for the <strong>' . e($course) . '</strong> program has been successfully submitted.</p>
+            <p>Please wait while we review your application. Your examination form and further instructions will be sent to you shortly.</p>
+            <p>Your Applicant Number is: <strong>' . e($applicantNumber) . '</strong></p>
+            <p>Sincerely,<br>Admissions Office</p>
+        ', function ($message) use ($email) {
+            $message->to($email)
+                    ->subject('Your Admission Application Has Been Received');
+        });
+
         return response()->json([
             'isSuccess' => true,
             'message' => 'Admission application submitted successfully.',
             'admission' => $admission,
         ], 200);
+
     } catch (ValidationException $e) {
         return response()->json([
             'isSuccess' => false,
@@ -157,48 +204,60 @@ class AdmissionsController extends Controller
 }
 
 
-    public function approveAdmission(Request $request, $id)
-    {
-        try {
-            $approver = auth()->user(); // Authenticated user
-            $admission = admissions::findOrFail($id);
 
-            // Update status
-            $admission->status = 'approved';
-            $admission->status_by = $approver->id;
-            $admission->save();
+   public function approveAdmission(Request $request, $id)
+{
+    try {
+        $approver = auth()->user();
 
-            // Send email to applicant
-          Mail::html('
+        if (!$approver) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthenticated access.',
+            ], 401);
+        }
+
+        $admission = admissions::findOrFail($id);
+
+        // Update admission status and is_admitted flag
+        $admission->status = 'approved';
+        $admission->status_by = $approver->id;
+        $admission->is_admitted = 1;
+        $admission->save();
+
+        // Send email to applicant
+        $course = $admission->academic_program ?? 'your chosen program';
+
+        Mail::html('
             <h2>Admission Approved</h2>
-            <p>Dear ' . ($admission->first_name ?? 'Applicant') . ',</p>
-            <p>We are pleased to inform you that your admission has been <strong>approved</strong>.</p>
-            <p>Please expect your examination form to be sent to you shortly.</p>
+            <p>Dear ' . e($admission->first_name ?? 'Applicant') . ',</p>
+            <p>We are pleased to inform you that your admission to the <strong>' . e($course) . '</strong> program has been <strong>approved</strong>.</p>
             <p>Thank you for choosing our institution!</p>
         ', function ($message) use ($admission) {
             $message->to($admission->email ?? 'no-reply@example.com')
                     ->subject('Your Admission Has Been Approved');
         });
 
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission approved and notification email sent.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to approve admission.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission approved and notification email sent.',
+            'admission' => $admission,
+        ], 200);
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Admission not found.',
+        ], 404);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to approve admission.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+
 
 
 
