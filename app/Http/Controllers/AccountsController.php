@@ -96,7 +96,7 @@ class AccountsController extends Controller
                 'is_insurance_member' => 'required|string',
                 'is_vaccinated' => 'required|string',
                 'is_indigenous' => 'required|string',
-                'is_admitted'=> 'string',
+               
             ]);
 
             if ($validator->fails()) {
@@ -111,6 +111,7 @@ class AccountsController extends Controller
             $validatedData['password'] = Hash::make($plainPassword);
             $validatedData['user_type'] = 'student';
             $validatedData['is_verified'] = 0;
+             $validatedData['is_admitted'] = 0;
             $validatedData['verification_code'] = $verificationCode;
 
 
