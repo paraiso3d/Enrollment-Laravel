@@ -30,14 +30,6 @@ class AuthController extends Controller
                         ->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
-
-            if ($user->is_verified == 0) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Your account is not yet verified. Please check your email.',
-                ], 403);
-            }
-
             $token = $user->createToken('auth-token')->plainTextToken;
 
             return response()->json([
