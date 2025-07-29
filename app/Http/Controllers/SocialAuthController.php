@@ -34,6 +34,7 @@ class SocialAuthController extends Controller
                 'email' => $googleUser->getEmail(),
                 'username' => $googleUser->getNickname() ?? Str::slug($googleUser->getName()),
                 'password' => Hash::make(Str::random(12)),
+                'is_admitted' => 0,
                 'is_verified' => 1,
                 'given_name' => $googleUser->user['given_name'] ?? '',
                 'last_name' => $googleUser->user['surname'] ?? '',
@@ -79,6 +80,7 @@ class SocialAuthController extends Controller
                     'password' => Hash::make(Str::random(12)),
                     'first_name' => $githubUser->getName() ?? '',
                     'is_verified' => 1,
+                    'is_admitted' => 0,
                 ]);
             }
 
