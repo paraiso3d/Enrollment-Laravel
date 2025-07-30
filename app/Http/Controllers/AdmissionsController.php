@@ -122,7 +122,7 @@ class AdmissionsController extends Controller
             continue;
         }
 
-        $logoUrl = 'https://yourdomain.com/images/logo.png'; // Replace with your actual logo URL
+        $logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png'; // Replace with your actual logo URL
 
         $htmlContent = "
         <html>
