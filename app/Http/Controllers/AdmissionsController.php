@@ -122,7 +122,7 @@ class AdmissionsController extends Controller
             continue;
         }
 
-        $logoUrl = 'https://upload.wikimedia.org/wikipedia/commons/a/ab/Logo_TV_2015.png'; // Replace with your actual logo URL
+        $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9'; // Replace with your actual logo URL
 
         $htmlContent = "
         <html>
