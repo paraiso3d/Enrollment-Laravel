@@ -156,3 +156,12 @@ Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmis
 //     Route::post('deletesection/{id}', [SectionsController::class, 'deleteSection']);
 //     Route::post('restoresection/{id}', [SectionsController::class, 'restoreSection']);
 // });
+
+//Dropdowns
+Route::prefix('dropdown')->group(function () {
+    Route::get('getstatuses', [AdmissionsController::class, 'getAdmissionStatuses']);
+    Route::get('getschoolcampus', [AdmissionsController::class, 'getAdmissionSchoolCampus']);
+    Route::get('getacademicprogram', [AdmissionsController::class, 'getAdmissionAcademicProgram']);
+});
+
+
