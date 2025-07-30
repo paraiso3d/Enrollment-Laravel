@@ -20,6 +20,35 @@ use Throwable;
 
 class AdmissionsController extends Controller
 {
+    public function getAdmissionById($id)
+{
+    try {
+        $admission = admissions::where('id', $id)
+            ->where('is_archived', 0)
+            ->first();
+
+        if (!$admission) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Admission not found.',
+            ], 404);
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission retrieved successfully.',
+            'admission' => $admission,
+        ]);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve admission.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
     public function getAdmissions(Request $request)
     {
         try {
@@ -328,11 +357,6 @@ class AdmissionsController extends Controller
             ], 500);
         }
     }
-
-
-
-
-
 
 
 
