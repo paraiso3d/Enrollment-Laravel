@@ -158,7 +158,7 @@ class AdmissionsController extends Controller
             <div class='email-container'>
                 <div class='header'>
                     <img src='{$logoUrl}' alt='Logo' height='80' />
-                    <h2>Admission Notification</h2>
+                    <h2>Entrance Examination</h2>
                 </div>
                 <p>Dear <strong>{$admission->first_name}</strong>,</p>
                 <p>{$request->custom_message}</p>
