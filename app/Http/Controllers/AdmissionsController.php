@@ -199,9 +199,6 @@ class AdmissionsController extends Controller
 
 
 
-
-
-
     public function applyAdmission(Request $request)
     {
         try {
