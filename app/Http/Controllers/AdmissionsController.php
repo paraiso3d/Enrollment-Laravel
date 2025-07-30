@@ -15,38 +15,39 @@ use Illuminate\Support\Facades\Mail;
 use App\Models\accounts;
 use Illuminate\Validation\Rule;
 use Throwable;
+use Illuminate\Support\Facades\Log;
 
 
 
 class AdmissionsController extends Controller
 {
     public function getAdmissionById($id)
-{
-    try {
-        $admission = admissions::where('id', $id)
-            ->where('is_archived', 0)
-            ->first();
+    {
+        try {
+            $admission = admissions::where('id', $id)
+                ->where('is_archived', 0)
+                ->first();
 
-        if (!$admission) {
+            if (!$admission) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Admission not found.',
+                ], 404);
+            }
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Admission retrieved successfully.',
+                'admission' => $admission,
+            ]);
+        } catch (Throwable $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
+                'message' => 'Failed to retrieve admission.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Admission retrieved successfully.',
-            'admission' => $admission,
-        ]);
-    } catch (Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to retrieve admission.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
     public function getAdmissions(Request $request)
@@ -102,50 +103,98 @@ class AdmissionsController extends Controller
 
 
 
-    public function sendManualAdmissionEmail(Request $request)
-    {
-        $request->validate([
-            'emails' => 'required|array',
-            'emails.*' => 'required|email',
-            'custom_message' => 'nullable|string',
-            'subject' => 'required|string|max:255',
-        ]);
+   public function sendManualAdmissionEmail(Request $request)
+{
+    $request->validate([
+        'emails' => 'required|array',
+        'emails.*' => 'email',
+        'subject' => 'required|string',
+        'custom_message' => 'required|string',
+    ]);
 
-        $customMessage = $request->input('custom_message', 'Please check your email regularly for further instructions.');
-        $subject = $request->input('subject');
-        $failedEmails = [];
+    $failedEmails = [];
 
-        foreach ($request->emails as $email) {
-            $admission = admissions::where('email', $email)->first();
+    foreach ($request->emails as $email) {
+        $admission = admissions::where('email', $email)->first();
 
-            if (!$admission) {
-                $failedEmails[] = $email;
-                continue;
-            }
-
-            try {
-                $htmlContent = view('emails.admission', [
-                    'first_name' => $admission->first_name,
-                    'program' => $admission->academic_program,
-                    'custom_message' => $customMessage,
-                ])->render();
-
-                Mail::html($htmlContent, function ($message) use ($email, $subject) {
-                    $message->to($email)->subject($subject);
-                });
-            } catch (\Exception $e) {
-                $failedEmails[] = $email;
-            }
+        if (!$admission) {
+            $failedEmails[] = $email;
+            continue;
         }
 
-        return response()->json([
-            'isSuccess' => count($failedEmails) === 0,
-            'message' => count($failedEmails) === 0
-                ? 'Emails sent successfully.'
-                : 'Some emails failed to send.',
-            'failed' => $failedEmails
-        ]);
+        $logoUrl = 'https://yourdomain.com/images/logo.png'; // Replace with your actual logo URL
+
+        $htmlContent = "
+        <html>
+        <head>
+            <style>
+                body {
+                    font-family: Arial, sans-serif;
+                    background-color: #f7f9fb;
+                    color: #333;
+                    padding: 20px;
+                }
+                .email-container {
+                    max-width: 600px;
+                    margin: auto;
+                    background: #ffffff;
+                    padding: 30px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                }
+                .header {
+                    text-align: center;
+                    margin-bottom: 30px;
+                }
+                .footer {
+                    margin-top: 40px;
+                    font-size: 12px;
+                    color: #888;
+                    text-align: center;
+                }
+            </style>
+        </head>
+        <body>
+            <div class='email-container'>
+                <div class='header'>
+                    <img src='{$logoUrl}' alt='Logo' height='80' />
+                    <h2>Admission Notification</h2>
+                </div>
+                <p>Dear <strong>{$admission->first_name}</strong>,</p>
+                <p>{$request->custom_message}</p>
+                <p><strong>Program Applied:</strong> {$admission->academic_program}</p>
+                <p>We appreciate your interest and look forward to your success with us.</p>
+                <p>Best regards,<br><strong>Admissions Office</strong></p>
+
+                <div class='footer'>
+                    &copy; " . date('Y') . " Your Institution. All rights reserved.
+                </div>
+            </div>
+        </body>
+        </html>
+        ";
+
+        try {
+            Mail::send([], [], function ($message) use ($email, $htmlContent, $request) {
+                $message->to($email)
+                    ->subject($request->subject)
+                    ->setBody($htmlContent, 'text/html');
+            });
+        } catch (\Exception $e) {
+            $failedEmails[] = $email;
+        }
     }
+
+    return response()->json([
+        'isSuccess' => count($failedEmails) === 0,
+        'message' => count($failedEmails) === 0
+            ? 'Emails sent successfully.'
+            : 'Some emails failed to send.',
+        'failed' => $failedEmails
+    ]);
+}
+
+
 
 
 
@@ -439,32 +488,32 @@ class AdmissionsController extends Controller
 
     //Dropdowns
     public function getAdmissionStatuses()
-{
-    $statuses = admissions::where('is_archived', 0)
-        ->select('id', 'status')
-        ->get()
-        ->groupBy('status')
-        ->map(function ($items, $status) {
-            $first = $items->first(); 
-            return [
-                'id' => $first->id,
-                'status' => ucfirst($status),
-            ];
-        })
-        ->values();
+    {
+        $statuses = admissions::where('is_archived', 0)
+            ->select('id', 'status')
+            ->get()
+            ->groupBy('status')
+            ->map(function ($items, $status) {
+                $first = $items->first();
+                return [
+                    'id' => $first->id,
+                    'status' => ucfirst($status),
+                ];
+            })
+            ->values();
 
-    return response()->json([
-        'isSuccess' => true,
-        'message' => 'Admission statuses retrieved successfully.',
-        'statuses' => $statuses
-    ]);
-}
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission statuses retrieved successfully.',
+            'statuses' => $statuses
+        ]);
+    }
 
 
     public function getAdmissionSchoolCampus()
     {
         $schoolcampus = admissions::where('is_archived', 0)
-            ->select('id','school_campus')
+            ->select('id', 'school_campus')
             ->get()
             ->groupBy('school_campus')
             ->map(function ($items, $schoolcampus) {
@@ -485,7 +534,7 @@ class AdmissionsController extends Controller
 
     public function getAdmissionAcademicProgram()
     {
-        $academicPrograms =admissions::where('is_archived', 0)
+        $academicPrograms = admissions::where('is_archived', 0)
             ->select('id', 'academic_program')
             ->get()
             ->groupBy('academic_program')
