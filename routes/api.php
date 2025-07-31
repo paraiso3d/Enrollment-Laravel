@@ -66,13 +66,15 @@ Route::middleware('auth:sanctum')->group(function () {
 // Create User
 // Route::post('createuser', [AccountsController::class, 'createUser']);
 // Route::post('createadmin', [AccountsController::class, 'createAdminAccount']);
-// Route::post('getusers', [AccountsController::class, 'getUsers']);
+Route::post('getusers', [AccountsController::class, 'getUsers']);
 // Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
 
 // // Admissions Management
 
 Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
 Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
+Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])->middleware('auth:sanctum');
+
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');
 Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
 // Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
@@ -163,7 +165,6 @@ Route::prefix('dropdown')->group(function () {
     Route::get('school-campuses', [AdmissionsController::class, 'getSchoolCampusesDropdown']);
     Route::get('academic-programs', [AdmissionsController::class, 'getAcademicProgramsDropdown']);
     Route::get('academic-years', [AdmissionsController::class, 'getAcademicYearsDropdown']);
-
 
 });
 

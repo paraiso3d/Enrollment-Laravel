@@ -25,6 +25,9 @@ use Illuminate\Support\Facades\Log;
 
 class AdmissionsController extends Controller
 {
+
+
+
     public function getAdmissionById($id)
     {
         try {
@@ -203,6 +206,43 @@ class AdmissionsController extends Controller
     ]);
 }
 
+
+public function sendCustomEmail(Request $request)
+{
+    $validated = $request->validate([
+        'recipient_email' => 'required|email',
+        'recipient_name' => 'required|string|max:255',
+        'email_type' => 'required|string', // e.g., entrance_exam, interview_schedule, etc.
+        'custom_data' => 'nullable|array'  // contains placeholders like exam_date, location, etc.
+    ]);
+
+    $template = $this->getEmailTemplate($validated['email_type']);
+
+    if (!$template) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Invalid email template selected.',
+        ], 400);
+    }
+
+    // Replace placeholders
+    $placeholders = $validated['custom_data'] ?? [];
+    $placeholders['name'] = $validated['recipient_name'];
+    foreach ($placeholders as $key => $value) {
+        $template = str_replace('{{' . $key . '}}', $value, $template);
+    }
+
+    // Send the email using Mail::html instead of Mail::raw
+    Mail::html($template, function ($message) use ($validated) {
+        $message->to($validated['recipient_email'], $validated['recipient_name'])
+                ->subject(Str::title(str_replace('_', ' ', $validated['email_type'])));
+    });
+
+    return response()->json([
+        'isSuccess' => true,
+        'message' => 'Email sent successfully.',
+    ]);
+}
 
 
 
@@ -486,7 +526,91 @@ class AdmissionsController extends Controller
 
 
 
-    
+
+
+    //Email Templates
+   private function getEmailTemplate($type)
+{
+    $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9';
+
+    $templates = [
+        'entrance exam' => "
+            <html>
+            <head>
+                <style>
+                    body {
+                        font-family: Arial, sans-serif;
+                        background-color: #f7f9fb;
+                        color: #333;
+                        padding: 20px;
+                    }
+                    .email-container {
+                        max-width: 600px;
+                        margin: auto;
+                        background: #ffffff;
+                        padding: 30px;
+                        border-radius: 8px;
+                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+                    }
+                    .header {
+                        text-align: center;
+                        margin-bottom: 30px;
+                    }
+                    .footer {
+                        margin-top: 40px;
+                        font-size: 12px;
+                        color: #888;
+                        text-align: center;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class='email-container'>
+                    <div class='header'>
+                        <img src='{$logoUrl}' alt='Logo' height='80' />
+                        <h2>Entrance Examination</h2>
+                    </div>
+                    <p>Dear <strong>{{first_name}}</strong>,</p>
+                    <p>{{custom_message}}</p>
+                    <p><strong>Program Applied:</strong> {{academic_program}}</p>
+                    <p>We appreciate your interest and look forward to your success with us.</p>
+                    <p>Best regards,<br><strong>Admissions Office</strong></p>
+                    <div class='footer'>
+                        &copy; " . date('Y') . " Your Institution. All rights reserved.
+                    </div>
+                </div>
+            </body>
+            </html>
+        ",
+
+        'interview_schedule' => '
+            <html>
+                <body>
+                    <h2>Interview Schedule</h2>
+                    <p>Dear {{name}},</p>
+                    <p>You are scheduled for an interview as part of the admission process.</p>
+                    <p><strong>Date:</strong> {{interview_date}}</p>
+                    <p><strong>Platform:</strong> {{platform}}</p>
+                </body>
+            </html>
+        ',
+
+        'admission_approved' => '
+            <html>
+                <body>
+                    <h2>Admission Approved</h2>
+                    <p>Dear {{name}},</p>
+                    <p>Congratulations! Your application for admission has been approved.</p>
+                    <p>Please proceed with the next steps listed on our portal.</p>
+                </body>
+            </html>
+        ',
+    ];
+
+    return $templates[$type] ?? null;
+}
+
+
 
     //HELPERS
     private function moveToPublicFolder($request, $fieldName, $prefix)
