@@ -19,7 +19,7 @@ class AccountsController extends Controller
     public function getusers(Request $request)
     {
         try {
-            $query = accounts::query();
+             $query = accounts::with('userType'); // Eager load userType
 
             // Search
             if ($search = $request->input('search')) {
@@ -73,7 +73,7 @@ class AccountsController extends Controller
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'middle_initial' => 'nullable|string|max:5',
-                'user_type' => 'nullable|string',
+                'user_type_id' => 'nullable|exists:user_types,id',
                 'suffix' => 'nullable|string|max:10',
                 'date_of_birth' => 'required|date',
                 'place_of_birth' => 'required|string|max:100',
@@ -109,7 +109,7 @@ class AccountsController extends Controller
 
 
             $validatedData['password'] = Hash::make($plainPassword);
-            $validatedData['user_type'] = 'student';
+            $validatedData['user_type_id'] = $validatedData['user_type_id'];
             $validatedData['is_verified'] = 0;
              $validatedData['is_admitted'] = 0;
             $validatedData['verification_code'] = $verificationCode;

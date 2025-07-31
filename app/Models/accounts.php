@@ -23,7 +23,7 @@ class accounts extends Authenticatable
 
       protected $table = 'accounts';
       protected $fillable = [
-        'user_type',
+        'user_type_id',
         'profile_picture',
         'school_campus',
         'academic_year',
@@ -62,6 +62,12 @@ class accounts extends Authenticatable
         'password',
         'verification_code',
         'is_verified',
-        'is_admitted'
     ];
+
+    // App\Models\accounts.php
+public function userType()
+{
+    return $this->belongsTo(user_types::class, 'user_type_id');
+}
+
 }
