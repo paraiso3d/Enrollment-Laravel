@@ -13,8 +13,12 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Models\accounts;
+use App\Models\courses;
+use App\Models\school_campus;
+use App\Models\school_years;
 use Illuminate\Validation\Rule;
 use Throwable;
+use Exception;
 use Illuminate\Support\Facades\Log;
 
 
@@ -78,6 +82,11 @@ class AdmissionsController extends Controller
             // Filter by academic program
             if ($request->has('academic_program')) {
                 $query->where('academic_program', $request->academic_program);
+            }
+            
+            // Filter by academic year
+            if ($request->has('academic_year')) {
+                $query->where('academic_year', $request->academic_year);
             }
 
             $admissions = $query->paginate(10);
@@ -199,141 +208,150 @@ class AdmissionsController extends Controller
 
 
 
-    public function applyAdmission(Request $request)
-    {
-        try {
-            $validated = $request->validate([
-                'surname' => 'required|string|max:50',
-                'given_name' => 'required|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'middle_initial' => 'nullable|string|max:5',
-                'user_type' => 'nullable|string',
-                'suffix' => 'nullable|string|max:10',
-                'date_of_birth' => 'required|date',
-                'place_of_birth' => 'required|string|max:100',
-                'gender' => 'required|string|max:10',
-                'civil_status' => 'required|string|max:20',
+   public function applyAdmission(Request $request)
+{
+    try {
+        $validated = $request->validate([
+            'surname' => 'required|string|max:50',
+            'given_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'middle_initial' => 'nullable|string|max:5',
+            'user_type' => 'nullable|string',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'required|date',
+            'place_of_birth' => 'required|string|max:100',
+            'gender' => 'required|string|max:10',
+            'civil_status' => 'required|string|max:20',
 
-                'street_address' => 'required|string|max:255',
-                'province' => 'required|string|max:100',
-                'city' => 'required|string|max:100',
-                'barangay' => 'required|string|max:100',
+            'street_address' => 'required|string|max:255',
+            'province' => 'required|string|max:100',
+            'city' => 'required|string|max:100',
+            'barangay' => 'required|string|max:100',
 
-                'nationality' => 'required|string|max:50',
-                'religion' => 'required|string|max:50',
-                'ethnic_affiliation' => 'nullable|string|max:50',
-                'telephone_number' => 'nullable|string|max:15',
-                'mobile_number' => 'required|string|max:15',
-                'email' => 'required|email|max:100|unique:admissions,email',
+            'nationality' => 'required|string|max:50',
+            'religion' => 'required|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'required|string|max:15',
+            'email' => 'required|email|max:100|unique:admissions,email',
 
-                'is_4ps_member' => 'required|string',
-                'is_insurance_member' => 'required|string',
-                'is_vaccinated' => 'required|string',
-                'is_indigenous' => 'required|string',
+            'is_4ps_member' => 'required|string',
+            'is_insurance_member' => 'required|string',
+            'is_vaccinated' => 'required|string',
+            'is_indigenous' => 'required|string',
 
-                'academic_program' => 'required|string|max:100',
-                'school_campus' => 'required|string|max:255',
-                'academic_year' => 'required|string|max:50',
-                'grade_level' => 'nullable|string|max:50',
-                'semester' => 'nullable|string|max:50',
-                'application_type' => 'required|string|max:50',
-                'classification' => 'required|string|max:50',
+            'academic_program_id' => 'required|exists:courses,id',
+            'school_campus_id' => 'required|exists:school_campus,id',
+            'academic_year_id' => 'required|exists:school_years,id',
+            'grade_level' => 'nullable|string|max:50',
+            'semester' => 'nullable|string|max:50',
+            'application_type' => 'required|string|max:50',
+            'classification' => 'required|string|max:50',
 
-                'last_school_attended' => 'nullable|string|max:255',
-                'remarks' => 'nullable|string|max:255',
+            'last_school_attended' => 'nullable|string|max:255',
+            'remarks' => 'nullable|string|max:255',
 
-                'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            ]);
+            'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+        ]);
 
-            $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
+        // Fetch names from related tables using IDs
+        $campusName = school_campus::find($validated['school_campus_id'])->campus_name;
+        $academicYear = school_years::find($validated['academic_year_id'])->year;
+        $programName = courses::find($validated['academic_program_id'])->course_name;
 
-            $admission = admissions::create([
-                // You can set `account_id` to null or pass from frontend if needed
-                'account_id' => null,
-                'applicant_number' => $applicantNumber,
-                'academic_year' => $validated['academic_year'],
-                'grade_level' => $validated['grade_level'] ?? null,
-                'semester' => $validated['semester'] ?? null,
-                'school_campus' => $validated['school_campus'],
-                'application_type' => $validated['application_type'],
-                'classification' => $validated['classification'],
-                'academic_program' => $validated['academic_program'],
 
-                'first_name' => $validated['given_name'],
-                'middle_name' => $validated['middle_name'] ?? '',
-                'last_name' => $validated['surname'],
-                'suffix' => $validated['suffix'] ?? '',
-                'gender' => $validated['gender'],
-                'birthdate' => $validated['date_of_birth'],
-                'birthplace' => $validated['place_of_birth'],
-                'civil_status' => $validated['civil_status'],
-                'email' => $validated['email'],
-                'contact_number' => $validated['mobile_number'],
-                'street_address' => $validated['street_address'],
-                'province' => $validated['province'],
-                'city' => $validated['city'],
-                'barangay' => $validated['barangay'],
+        $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
 
-                'nationality' => $validated['nationality'],
-                'religion' => $validated['religion'],
-                'ethnic_affiliation' => $validated['ethnic_affiliation'] ?? null,
-                'telephone_number' => $validated['telephone_number'] ?? null,
-                'is_4ps_member' => $validated['is_4ps_member'],
-                'is_insurance_member' => $validated['is_insurance_member'],
-                'is_vaccinated' => $validated['is_vaccinated'],
-                'is_indigenous' => $validated['is_indigenous'],
+        $admission = admissions::create([
+            'account_id' => null,
+            'applicant_number' => $applicantNumber,
+            'academic_year_id' => $validated['academic_year_id'],
+            'grade_level' => $validated['grade_level'] ?? null,
+            'semester' => $validated['semester'] ?? null,
+            'school_campus_id' => $validated['school_campus_id'],
+            'application_type' => $validated['application_type'],
+            'classification' => $validated['classification'],
+            'academic_program_id' => $validated['academic_program_id'],
 
-                'last_school_attended' => $validated['last_school_attended'] ?? null,
-                'remarks' => $validated['remarks'] ?? null,
-                'status' => 'pending',
+            'first_name' => $validated['given_name'],
+            'middle_name' => $validated['middle_name'] ?? '',
+            'last_name' => $validated['surname'],
+            'suffix' => $validated['suffix'] ?? '',
+            'gender' => $validated['gender'],
+            'birthdate' => $validated['date_of_birth'],
+            'birthplace' => $validated['place_of_birth'],
+            'civil_status' => $validated['civil_status'],
+            'email' => $validated['email'],
+            'contact_number' => $validated['mobile_number'],
+            'street_address' => $validated['street_address'],
+            'province' => $validated['province'],
+            'city' => $validated['city'],
+            'barangay' => $validated['barangay'],
 
-                'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
-                'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
-                'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
-                'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
-                'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
-            ]);
+            'nationality' => $validated['nationality'],
+            'religion' => $validated['religion'],
+            'ethnic_affiliation' => $validated['ethnic_affiliation'] ?? null,
+            'telephone_number' => $validated['telephone_number'] ?? null,
+            'is_4ps_member' => $validated['is_4ps_member'],
+            'is_insurance_member' => $validated['is_insurance_member'],
+            'is_vaccinated' => $validated['is_vaccinated'],
+            'is_indigenous' => $validated['is_indigenous'],
 
-            $course = $validated['academic_program'];
-            $firstName = $validated['given_name'] ?? 'Applicant';
-            $email = $validated['email'];
+            'last_school_attended' => $validated['last_school_attended'] ?? null,
+            'remarks' => $validated['remarks'] ?? null,
+            'status' => 'pending',
 
-            Mail::html('
+            'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
+            'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
+            'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
+            'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
+            'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
+        ]);
+
+        // Send email
+        $firstName = $validated['given_name'] ?? 'Applicant';
+        $email = $validated['email'];
+
+        Mail::html("
             <h2>Admission Application Received</h2>
-            <p>Dear ' . e($firstName) . ',</p>
+            <p>Dear {$firstName},</p>
             <p>Thank you for applying to our institution.</p>
-            <p>Your application for the <strong>' . e($course) . '</strong> program has been successfully submitted.</p>
+            <p>Your application for the <strong>{$programName}</strong> program has been successfully submitted.</p>
             <p>Please wait while we review your application. Your examination form and further instructions will be sent to you shortly.</p>
-            <p>Your Applicant Number is: <strong>' . e($applicantNumber) . '</strong></p>
+            <p>Your Applicant Number is: <strong>{$applicantNumber}</strong></p>
             <p>Sincerely,<br>Admissions Office</p>
-        ', function ($message) use ($email) {
-                $message->to($email)
-                    ->subject('Your Admission Application Has Been Received');
-            });
+        ", function ($message) use ($email) {
+            $message->to($email)
+                ->subject('Your Admission Application Has Been Received');
+        });
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission application submitted successfully.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to submit admission application.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Admission application submitted successfully.',
+            'admission' => $admission,
+            'academic_program' => $programName,
+            'school_campus' => $campusName,
+            'academic_year' => $academicYear,
+                ], 200);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to submit admission application.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
 
@@ -466,6 +484,10 @@ class AdmissionsController extends Controller
 
 
 
+
+
+    
+
     //HELPERS
     private function moveToPublicFolder($request, $fieldName, $prefix)
     {
@@ -506,49 +528,63 @@ class AdmissionsController extends Controller
         ]);
     }
 
-
-    public function getAdmissionSchoolCampus()
-    {
-        $schoolcampus = admissions::where('is_archived', 0)
-            ->select('id', 'school_campus')
-            ->get()
-            ->groupBy('school_campus')
-            ->map(function ($items, $schoolcampus) {
-                $first = $items->first();
-                return [
-                    'id' => $first->id,
-                    'school_campus' => ucfirst($schoolcampus)
-                ];
-            })
-            ->values();
+    public function getAcademicProgramsDropdown()
+{
+    try {
+        $data = courses::select('id', 'course_name')->get();
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Admission statuses retrieved successfully.',
-            'statuses' => $schoolcampus
+            'message' => 'Academic programs fetched successfully.',
+            'data' => $data
         ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to fetch academic programs.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
-    public function getAdmissionAcademicProgram()
-    {
-        $academicPrograms = admissions::where('is_archived', 0)
-            ->select('id', 'academic_program')
-            ->get()
-            ->groupBy('academic_program')
-            ->map(function ($items, $academicProgram) {
-                $first = $items->first();
 
-                return [
-                    'id' => $first->id,
-                    'school_campus' => ucfirst($academicProgram)
-                ];
-            })
-            ->values();
+   public function getSchoolCampusesDropdown()
+{
+    try {
+        $data = school_campus::select('id', 'campus_name')->get();
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Admission academic programs retrieved successfully.',
-            'academicPrograms' => $academicPrograms
+            'message' => 'School campuses fetched successfully.',
+            'data' => $data
         ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to fetch school campuses.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
+public function getAcademicYearsDropdown()
+{
+    try {
+        $data = school_years::select('id', 'school_year')->get();
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Academic years fetched successfully.',
+            'data' => $data
+        ]);
+    } catch (Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to fetch academic years.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 }

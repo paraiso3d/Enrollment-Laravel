@@ -97,8 +97,8 @@ Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmis
 // // School Campus Management
 // Route::middleware('auth:sanctum')->group(function (){
  
-//  Route::get('getcampuses', [SchoolCampusController::class, 'getCampuses']);   
-//  Route::post('addcampus', [SchoolCampusController::class, 'addCampus']);
+ Route::get('getcampuses', [SchoolCampusController::class, 'getCampuses']);   
+ Route::post('addcampus', [SchoolCampusController::class, 'addCampus']);
 
 // });
 
@@ -160,8 +160,11 @@ Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmis
 //Dropdowns
 Route::prefix('dropdown')->group(function () {
     Route::get('getstatuses', [AdmissionsController::class, 'getAdmissionStatuses']);
-    Route::get('getschoolcampus', [AdmissionsController::class, 'getAdmissionSchoolCampus']);
-    Route::get('getacademicprogram', [AdmissionsController::class, 'getAdmissionAcademicProgram']);
+    Route::get('school-campuses', [AdmissionsController::class, 'getSchoolCampusesDropdown']);
+    Route::get('academic-programs', [AdmissionsController::class, 'getAcademicProgramsDropdown']);
+    Route::get('academic-years', [AdmissionsController::class, 'getAcademicYearsDropdown']);
+
+
 });
 
 

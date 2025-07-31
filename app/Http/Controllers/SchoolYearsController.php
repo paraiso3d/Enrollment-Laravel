@@ -38,22 +38,16 @@ class SchoolYearsController extends Controller
             $validator = Validator::make($request->all(), [
                 'school_year' => 'required|string|max:255',
                 'semester' => 'required|string|max:50',
-                'enrollment_start_date' => 'required|date',
-                'enrollment_end_date' => 'sometimes|date|after_or_equal:enrollment_start_date',
             ]);
 
             if ($validator->fails()) {
                 throw new ValidationException($validator);
             }
-            $enrollmentEnd = $request->enrollment_end_date ?? 
-            date('Y-m-d', strtotime($request->enrollment_start_date . ' +7 days'));
 
             // Create a new school year
             $schoolYear = school_years::create([
                 'school_year' => $request->school_year,
                 'semester' => $request->semester,
-                'enrollment_start_date' => $request->enrollment_start_date,
-                'enrollment_end_date' => $enrollmentEnd
             ]);
 
             return response()->json([

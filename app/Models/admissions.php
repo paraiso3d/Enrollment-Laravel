@@ -14,13 +14,13 @@ class Admissions extends Model
     protected $fillable = [
         'account_id',
         'applicant_number',
-        'academic_year',
+        'academic_year_id',
         'grade_level',
 
-        'school_campus',
+        'school_campus_id',
         'application_type',
         'classification',
-        'academic_program',
+        'academic_program_id',
 
         'first_name',
         'middle_name',
@@ -57,9 +57,4 @@ class Admissions extends Model
         'certificate_of_completion',
     ];
 
-    // Relationship to Account (User)
-    public function account()
-    {
-        return $this->belongsTo(Account::class, 'account_id');
-    }
 }
