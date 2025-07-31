@@ -343,92 +343,97 @@ class AccountsController extends Controller
 
     // Method to change the user profile
     public function updateProfile(Request $request)
-    {
-        try {
-            /** @var \App\Models\accounts $account */
-            $account = auth()->user();
+{
+    try {
+        /** @var \App\Models\accounts $account */
+        $account = auth()->user();
 
-            $validator = Validator::make($request->all(), [
-                'username' => 'sometimes|required|string|max:50',
-                'surname' => 'sometimes|required|string|max:50',
-                'given_name' => 'sometimes|required|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-                'middle_initial' => 'nullable|string|max:5',
-                'suffix' => 'nullable|string|max:10',
-                'date_of_birth' => 'sometimes|required|date',
-                'place_of_birth' => 'sometimes|required|string|max:100',
-                'gender' => 'sometimes|required|string|max:10',
-                'civil_status' => 'sometimes|required|string|max:20',
-                'internet_connectivity' => 'sometimes|required|string|max:50',
-                'learning_modality' => 'sometimes|required|string|max:50',
-                'digital_literacy' => 'sometimes|required|string|max:50',
-                'device' => 'sometimes|required|string|max:50',
+        $validator = Validator::make($request->all(), [
+            'username' => 'sometimes|required|string|max:50',
+            'surname' => 'sometimes|required|string|max:50',
+            'given_name' => 'sometimes|required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'middle_initial' => 'nullable|string|max:5',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'sometimes|required|date',
+            'place_of_birth' => 'sometimes|required|string|max:100',
+            'gender' => 'sometimes|required|string|max:10',
+            'civil_status' => 'sometimes|required|string|max:20',
 
-                'street_address' => 'sometimes|required|string|max:255',
-                'province' => 'sometimes|required|string|max:100',
-                'city' => 'sometimes|required|string|max:100',
-                'barangay' => 'sometimes|required|string|max:100',
+            // Dropdown inputs
+            'street_address' => 'sometimes|required|string|max:255',
+            'province' => 'sometimes|required|string|max:100',
+            'city' => 'sometimes|required|string|max:100',
+            'barangay' => 'sometimes|required|string|max:100',
 
-                'nationality' => 'sometimes|required|string|max:50',
-                'religion' => 'sometimes|required|string|max:50',
-                'ethnic_affiliation' => 'nullable|string|max:50',
-                'telephone_number' => 'nullable|string|max:15',
-                'mobile_number' => 'sometimes|required|string|max:15',
+            'nationality' => 'sometimes|required|string|max:50',
+            'religion' => 'sometimes|required|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'sometimes|required|string|max:15',
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'max:100',
+                Rule::unique('accounts', 'email')->ignore($account->id),
+            ],
 
-                'email' => [
-                    'sometimes',
-                    'required',
-                    'email',
-                    'max:100',
-                    Rule::unique('accounts', 'email')->ignore($account->id),
-                ],
+            // New aligned types from createUser
+            'is_4ps_member' => 'sometimes|required|boolean',
+            'is_insurance_member' => 'sometimes|required|boolean',
+            'is_vaccinated' => 'sometimes|required|boolean',
+            'is_indigenous' => 'sometimes|required|boolean',
 
-                'is_4ps_member' => 'sometimes|required|boolean',
-                'is_insurance_member' => 'sometimes|required|boolean',
-                'vacation_status' => 'sometimes|required|string|max:50',
-                'is_indigenous' => 'sometimes|required|boolean',
-            ]);
+            // Extra info fields
+            'internet_connectivity' => 'sometimes|required|string|max:50',
+            'learning_modality' => 'sometimes|required|string|max:50',
+            'digital_literacy' => 'sometimes|required|string|max:50',
+            'device' => 'sometimes|required|string|max:50',
 
-            if ($validator->fails()) {
-                throw new ValidationException($validator);
-            }
+            // Image
+            'profile_picture' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+        ]);
 
-            $validated = $validator->validated();
-
-            // ✅ Handle file upload
-            if ($request->hasFile('profile_picture')) {
-                $file = $request->file('profile_picture');
-                $filename = uniqid() . '.' . $file->getClientOriginalExtension();
-                $file->move(public_path('profile_pictures'), $filename);
-                $validated['profile_picture'] = 'profile_pictures/' . $filename;
-            }
-
-            // ✅ Now update everything in one go
-            $account->update($validated);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Profile updated successfully.',
-                'accounts' => $account,
-                'profile_picture_url' => $account->profile_picture
-                    ? asset($account->profile_picture)
-                    : null,
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to update profile.',
-                'error' => $e->getMessage(),
-            ], 500);
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
+
+        $validated = $validator->validated();
+
+        // ✅ Handle file upload
+        if ($request->hasFile('profile_picture')) {
+            $file = $request->file('profile_picture');
+            $filename = uniqid() . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('profile_pictures'), $filename);
+            $validated['profile_picture'] = 'profile_pictures/' . $filename;
+        }
+
+        $account->update($validated);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Profile updated successfully.',
+            'accounts' => $account,
+            'profile_picture_url' => $account->profile_picture
+                ? asset($account->profile_picture)
+                : null,
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to update profile.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
     public function changePassword(Request $request)
