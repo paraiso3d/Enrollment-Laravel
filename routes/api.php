@@ -66,7 +66,7 @@ Route::middleware('auth:sanctum')->group(function () {
 // Create User
 // Route::post('createuser', [AccountsController::class, 'createUser']);
 // Route::post('createadmin', [AccountsController::class, 'createAdminAccount']);
-Route::post('getusers', [AccountsController::class, 'getUsers']);
+Route::get('getusers', [AccountsController::class, 'getUsers']);
 // Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
 
 // // Admissions Management
