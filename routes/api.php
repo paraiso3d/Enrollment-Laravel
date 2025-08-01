@@ -34,9 +34,10 @@ Route::get('/auth/github/redirect', [SocialAuthController::class, 'redirectToGit
 Route::get('/auth/github/callback', [SocialAuthController::class, 'handleGithubCallback']);
 // Admissions
 
+
 Route::post('createuser', [AccountsController::class, 'createUser']);
 Route::post('createadmin', [AccountsController::class, 'createAdminAccount']);
-Route::post('createinstructor',[AccountsController::class, 'createInstructor']);
+Route::post('updateuser/{id}',[AccountsController::class, 'updateUser']);
 Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 // Login and Logout 

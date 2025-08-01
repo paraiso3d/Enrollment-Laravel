@@ -434,6 +434,82 @@ class AccountsController extends Controller
     }
 }
 
+ public function updateUser(Request $request, $id)
+{
+    try {
+        $account = accounts::findOrFail($id);
+
+        $validator = Validator::make($request->all(), [
+            'username' => 'sometimes|required|string|max:50',
+            'surname' => 'sometimes|required|string|max:50',
+            'given_name' => 'sometimes|required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'middle_initial' => 'nullable|string|max:5',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'sometimes|required|date',
+            'place_of_birth' => 'sometimes|required|string|max:100',
+            'gender' => 'sometimes|required|string|max:10',
+            'civil_status' => 'sometimes|required|string|max:20',
+
+            'street_address' => 'sometimes|required|string|max:255',
+            'province' => 'sometimes|required|string|max:100',
+            'city' => 'sometimes|required|string|max:100',
+            'barangay' => 'sometimes|required|string|max:100',
+
+            'nationality' => 'sometimes|required|string|max:50',
+            'religion' => 'sometimes|required|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'sometimes|required|string|max:15',
+            'email' => [
+                'sometimes',
+                'required',
+                'email',
+                'max:100',
+                Rule::unique('accounts', 'email')->ignore($id),
+            ],
+
+            'is_4ps_member' => 'sometimes|required|boolean',
+            'is_insurance_member' => 'sometimes|required|boolean',
+            'is_vaccinated' => 'sometimes|required|boolean',
+            'is_indigenous' => 'sometimes|required|boolean',
+        ]);
+
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
+        }
+
+        $validated = $validator->validated();
+
+        // Optional: Cast boolean fields if needed
+        foreach (['is_4ps_member', 'is_insurance_member', 'is_vaccinated', 'is_indigenous'] as $boolField) {
+            if (array_key_exists($boolField, $validated)) {
+                $validated[$boolField] = (bool) $validated[$boolField];
+            }
+        }
+
+        $account->update($validated);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'User updated successfully.',
+            'accounts' => $account,
+        ]);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to update User.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 
 
     public function changePassword(Request $request)
