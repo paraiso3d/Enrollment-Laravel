@@ -17,6 +17,12 @@ class CoursesController extends Controller
     {
         try {
             $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
             // Validate the request data
             $validated = $request->validate([
                 'course_name' => 'required|string|max:100',

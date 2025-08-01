@@ -69,33 +69,33 @@ class AccountsController extends Controller
 
 
                 //Personal Information
-                'surname' => 'required|string|max:50',
-                'given_name' => 'required|string|max:50',
+                'surname' => 'nullable|string|max:50',
+                'given_name' => 'nullable|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
                 'middle_initial' => 'nullable|string|max:5',
                 'user_type_id' => 'nullable|exists:user_types,id',
                 'suffix' => 'nullable|string|max:10',
-                'date_of_birth' => 'required|date',
-                'place_of_birth' => 'required|string|max:100',
-                'gender' => 'required|string|max:10',
-                'civil_status' => 'required|string|max:20',
+                'date_of_birth' => 'nullable|date',
+                'place_of_birth' => 'nullable|string|max:100',
+                'gender' => 'nullable|string|max:10',
+                'civil_status' => 'nullable|string|max:20',
 
                 //  Dropdown inputs
-                'street_address' => 'required|string|max:255',
-                'province' => 'required|string|max:100',
-                'city' => 'required|string|max:100',
-                'barangay' => 'required|string|max:100',
+                'street_address' => 'nullable|string|max:255',
+                'province' => 'nullable|string|max:100',
+                'city' => 'nullable|string|max:100',
+                'barangay' => 'nullable|string|max:100',
 
-                'nationality' => 'required|string|max:50',
-                'religion' => 'required|string|max:50',
+                'nationality' => 'nullable|string|max:50',
+                'religion' => 'nullable|string|max:50',
                 'ethnic_affiliation' => 'nullable|string|max:50',
                 'telephone_number' => 'nullable|string|max:15',
-                'mobile_number' => 'required|string|max:15',
-                'email' => 'required|email|max:100|unique:accounts,email',
-                'is_4ps_member' => 'required|string',
-                'is_insurance_member' => 'required|string',
-                'is_vaccinated' => 'required|string',
-                'is_indigenous' => 'required|string',
+                'mobile_number' => 'nullable|string|max:15',
+                'email' => 'nullable|email|max:100|unique:accounts,email',
+                'is_4ps_member' => 'nullable|string',
+                'is_insurance_member' => 'nullable|string',
+                'is_vaccinated' => 'nullable|string',
+                'is_indigenous' => 'nullable|string',
                
             ]);
 
