@@ -15,7 +15,7 @@ class UserTypesController extends Controller
 {
     public function getUserTypes()
     {
-        
+
         try {
             // Retrieve all user types
             $userTypes = user_types::where('is_archived', 0)->get();
@@ -36,11 +36,11 @@ class UserTypesController extends Controller
     public function createUserType(Request $request)
     {
         try {
-           
+
 
             // Validate the request data
             $validator = Validator::make($request->all(), [
-                 'role_name' => 'required|string|max:255|unique:user_types,role_name',
+                'role_name' => 'required|string|max:255|unique:user_types,role_name',
                 'description' => 'nullable|string|max:1000',
             ]);
 
@@ -74,63 +74,63 @@ class UserTypesController extends Controller
         }
     }
 
-public function updateUserType(Request $request, $id)
-{
-    try {
-        $user = Auth::user();
+    public function updateUserType(Request $request, $id)
+    {
+        try {
+            $user = Auth::user();
 
-        // Validate the request data
-        $validator = Validator::make($request->all(), [
-            'role_name' => [
-                'sometimes',
-                'string',
-                'max:255',
-                Rule::unique('user_types', 'role_name')->ignore($id),
-            ],
-            'description' => 'nullable|string|max:1000',
-        ]);
+            // Validate the request data
+            $validator = Validator::make($request->all(), [
+                'role_name' => [
+                    'sometimes',
+                    'string',
+                    'max:255',
+                    Rule::unique('user_types', 'role_name')->ignore($id),
+                ],
+                'role_description' => 'nullable|string|max:1000',
+            ]);
 
-        if ($validator->fails()) {
-            throw new ValidationException($validator);
+            if ($validator->fails()) {
+                throw new ValidationException($validator);
+            }
+
+            // Find the user type by ID
+            $userType = user_types::findOrFail($id);
+
+            // Update fields only if they exist
+            if ($request->has('role_name')) {
+                $userType->role_name = $request->role_name;
+            }
+
+            if ($request->has('role_description')) {
+                $userType->role_description = $request->role_description;
+            }
+
+            $userType->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'userType' => $userType,
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'User type not found.',
+            ], 404);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->validator->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to update user type.',
+                'error' => $e->getMessage(),
+            ], 500);
         }
-
-        // Find the user type by ID
-        $userType = user_types::findOrFail($id);
-
-        // Update fields only if they exist
-        if ($request->has('role_name')) {
-            $userType->role_name = $request->role_name;
-        }
-
-        if ($request->has('description')) {
-            $userType->description = $request->description;
-        }
-
-        $userType->save();
-
-        return response()->json([
-            'isSuccess' => true,
-            'userType' => $userType,
-        ], 200);
-    } catch (ModelNotFoundException $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'User type not found.',
-        ], 404);
-    } catch (ValidationException $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $e->validator->errors(),
-        ], 422);
-    } catch (Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to update user type.',
-            'error' => $e->getMessage(),
-        ], 500);
     }
-}
 
 
     public function deleteUserType($id)
@@ -191,5 +191,4 @@ public function updateUserType(Request $request, $id)
             ], 500);
         }
     }
-
 }
