@@ -79,6 +79,12 @@ class SchoolCampusController extends Controller
     {
         try {
             $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
             // Validate the request data
             $validator = Validator::make($request->all(), [
                 'campus_name' => 'sometimes|string|max:255',
