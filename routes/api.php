@@ -98,13 +98,12 @@ Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmis
 // Route::post('verifyaccount', [AccountsController::class, 'verifyAccount']);
 
 // // School Campus Management
-// Route::middleware('auth:sanctum')->group(function (){
+Route::middleware('auth:sanctum')->group(function (){
  
 Route::get('getcampuses', [SchoolCampusController::class, 'getCampuses']);   
 Route::post('addcampus', [SchoolCampusController::class, 'addCampus']);
 Route::post('updatecampus/{id}', [SchoolCampusController::class, 'updateCampus']);
-
-// });
+ });
 
 
 // // Account Management
