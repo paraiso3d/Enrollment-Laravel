@@ -36,6 +36,13 @@ class UserTypesController extends Controller
     public function createUserType(Request $request)
     {
         try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
 
 
             // Validate the request data
@@ -52,7 +59,7 @@ class UserTypesController extends Controller
             // Create a new user type
             $userType = user_types::create([
                 'role_name' => $request->role_name,
-                'description' => $request->role_description,
+                'description' => $request->description,
             ]);
 
             return response()->json([
@@ -87,7 +94,7 @@ class UserTypesController extends Controller
                     'max:255',
                     Rule::unique('user_types', 'role_name')->ignore($id),
                 ],
-                'role_description' => 'nullable|string|max:1000',
+                'description' => 'nullable|string|max:1000',
             ]);
 
             if ($validator->fails()) {
@@ -102,8 +109,8 @@ class UserTypesController extends Controller
                 $userType->role_name = $request->role_name;
             }
 
-            if ($request->has('role_description')) {
-                $userType->role_description = $request->role_description;
+            if ($request->has('description')) {
+                $userType->description = $request->description;
             }
 
             $userType->save();

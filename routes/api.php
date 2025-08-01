@@ -117,12 +117,12 @@ Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmis
 // });
 
 // // User Types Management
-// Route::middleware('auth:sanctum')->group(function () 
- Route::post('createusertype', [UserTypesController::class, 'createUserType']);
+Route::middleware('auth:sanctum')->group(function (){ 
+    Route::post('createusertype', [UserTypesController::class, 'createUserType']);
     Route::post('updateusertype/{id}', [UserTypesController::class, 'updateUserType']);
     Route::post('deleteusertype/{id}', [UserTypesController::class, 'deleteUserType']);
 //     Route::post('restoreusertype/{id}', [UserTypesController::class, 'restoreUserType']);
-// });
+});
 
 
 
