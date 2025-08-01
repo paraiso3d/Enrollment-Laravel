@@ -142,13 +142,13 @@ Route::middleware('auth:sanctum')->group(function () {
 
 
 // // School Years Management
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::post('addschoolyear', [SchoolYearsController::class, 'createSchoolYear']);
-//     Route::get('getschoolyears', [SchoolYearsController::class, 'getSchoolYears']);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::post('addschoolyear', [SchoolYearsController::class, 'createSchoolYear']);
+    Route::get('getschoolyears', [SchoolYearsController::class, 'getSchoolYears']);
 //     Route::post('updateschoolyear/{id}', [SchoolYearsController::class, 'updateSchoolYear']);
 //     Route::post('deleteschoolyear/{id}', [SchoolYearsController::class, 'deleteSchoolYear']);
 //     Route::post('restoreschoolyear/{id}', [SchoolYearsController::class, 'restoreSchoolYear']);
-// });
+});
 
 // // Sections Management
 // Route::middleware('auth:sanctum')->group(function () {

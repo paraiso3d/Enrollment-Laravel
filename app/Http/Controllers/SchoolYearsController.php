@@ -77,8 +77,7 @@ class SchoolYearsController extends Controller
             $validator = Validator::make($request->all(), [
                 'school_year' => 'sometimes|string|max:255',
                 'semester' => 'sometimes|string|max:50',
-                'enrollment_start_date' => 'sometimes|date',
-                'enrollment_end_date' => 'sometimes|date|after_or_equal:enrollment_start_date',
+                
             ]);
 
             if ($validator->fails()) {
@@ -89,7 +88,7 @@ class SchoolYearsController extends Controller
             $schoolYear = school_years::findOrFail($id);
 
             // Update the school year
-            $schoolYear->update($request->only(['school_year', 'semester', 'enrollment_start_date', 'enrollment_end_date']));
+            $schoolYear->update($request->only(['school_year', 'semester']));
 
             return response()->json([
                 'isSuccess' => true,
