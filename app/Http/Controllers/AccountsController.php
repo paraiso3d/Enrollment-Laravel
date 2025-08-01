@@ -442,6 +442,7 @@ class AccountsController extends Controller
         $validator = Validator::make($request->all(), [
             'username' => 'sometimes|required|string|max:50',
             'surname' => 'sometimes|required|string|max:50',
+            'user_type_id' => 'sometimes|required|exists:user_types,id',
             'given_name' => 'sometimes|required|string|max:50',
             'middle_name' => 'nullable|string|max:50',
             'middle_initial' => 'nullable|string|max:5',
