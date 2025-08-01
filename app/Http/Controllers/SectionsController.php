@@ -16,6 +16,12 @@ class SectionsController extends Controller
     {
         try {
              $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
             // Retrieve only non-archived sections
             $sections = sections::with(['instructor', 'course', 'schoolYear'])
                 ->where('is_archived', 0)

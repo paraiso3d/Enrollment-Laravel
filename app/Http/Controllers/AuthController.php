@@ -18,25 +18,29 @@ class AuthController extends Controller
    public function login(Request $request)
 {
     try {
-        // Validate input
         $request->validate([
-            'login' => 'required|string',  // This can be email or username
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
 
-        // Find user by email or username
-        $user = accounts::where('email', $request->login)
-                        ->orWhere('username', $request->login)
-                        ->first();
+        // Find user with userType relation
+        $user = accounts::with('userType')
+            ->where('email', $request->login)
+            ->orWhere('username', $request->login)
+            ->first();
 
         if ($user && Hash::check($request->password, $user->password)) {
             $token = $user->createToken('auth-token')->plainTextToken;
+
+            // Format the response
+            $userData = $user->makeHidden(['password', 'created_at', 'updated_at']);
+            $userData['role_name'] = $user->userType->role_name ?? null;
 
             return response()->json([
                 'isSuccess' => true,
                 'message' => 'Logged in successfully',
                 'token' => $token,
-                'user' => $user->makeHidden(['password', 'created_at', 'updated_at']),
+                'user' => $userData,
             ], 200);
         }
 
@@ -59,6 +63,7 @@ class AuthController extends Controller
         ], 500);
     }
 }
+
 
     public function logout(Request $request)
     {
