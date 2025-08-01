@@ -60,7 +60,16 @@ class CoursesController extends Controller
     public function getCourses()
     {
         try {
+            
             $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
+             
+    
             // Retrieve only non-archived courses
             $courses = courses::where('is_archived', 0)->get();
 
@@ -176,6 +185,13 @@ class CoursesController extends Controller
     public function getCourseSubjects($id)
 {
     try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
         $course = courses::with('subjects')->findOrFail($id);
 
         return response()->json([

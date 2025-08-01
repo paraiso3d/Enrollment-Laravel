@@ -127,13 +127,13 @@ Route::middleware('auth:sanctum')->group(function (){
 
 
 //   // Courses Management
-// Route::middleware('auth:sanctum')->group(function () {
-    
-//     Route::get('getcourses', [CoursesController::class, 'getCourses']);
-//     Route::post('updatecourse/{id}', [CoursesController::class, 'updateCourse']);
-//     Route::post('deletecourse/{id}', [CoursesController::class, 'deleteCourse']);
-//     Route::post('restorecourse/{id}', [CoursesController::class, 'restoreCourse']);
-// });
+
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('getcourses', [CoursesController::class, 'getCourses']);
+    Route::post('updatecourse/{id}', [CoursesController::class, 'updateCourse']);
+    Route::post('deletecourse/{id}', [CoursesController::class, 'deleteCourse']);
+    Route::post('restorecourse/{id}', [CoursesController::class, 'restoreCourse']);
+});
 
 // // Enrollments Management
 // Route::middleware('auth:sanctum')->group(function () {
