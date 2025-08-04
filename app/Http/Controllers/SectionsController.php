@@ -254,37 +254,4 @@ class SectionsController extends Controller
         }
     }  
     
-    public function getCampusDropdown()
-    {
-        try {
-            $user = Auth::user();
-            if (!$user) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Unauthorized.',
-                ], 401);
-            }
-
-            $campuses = school_campus::where('is_archived', 0)
-                ->get()
-                ->map(function ($campus) {
-                    return [
-                        'id' => $campus->id,
-                        'campus_name' => $campus->campus_name,
-                    ];
-                }); 
-
-            return response()->json([
-                'isSuccess' => true,
-                'campuses' => $campuses,
-            ], 200);
-
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve campuses dropdown.',
-                'error' => $e->getMessage(),
-            ], 500);
-        } 
-    }
 }
