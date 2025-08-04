@@ -151,13 +151,13 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 // // Sections Management
-// Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
 //     Route::post('addsection', [SectionsController::class, 'addSection']);
-//     Route::get('getsections', [SectionsController::class, 'getSections']);
+    Route::get('getsections', [SectionsController::class, 'getSections']);
 //     Route::post('updatesection/{id}', [SectionsController::class, 'updateSection']);
 //     Route::post('deletesection/{id}', [SectionsController::class, 'deleteSection']);
 //     Route::post('restoresection/{id}', [SectionsController::class, 'restoreSection']);
-// });
+});
 
 //Dropdowns
 Route::prefix('dropdown')->group(function () {
