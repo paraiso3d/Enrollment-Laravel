@@ -675,12 +675,12 @@ public function sendCustomEmail(Request $request)
    public function getSchoolCampusesDropdown()
 {
     try {
-        $data = school_campus::select('id', 'campus_name')->get();
+        $campuses = school_campus::select('id', 'campus_name')->get();
 
         return response()->json([
             'isSuccess' => true,
             'message' => 'School campuses fetched successfully.',
-            'data' => $data
+            'data' => $campuses
         ]);
     } catch (Exception $e) {
         return response()->json([

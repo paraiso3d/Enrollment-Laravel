@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\courses;
 use App\Models\school_campus;
 use Illuminate\Http\Request;
 use App\Models\sections;
@@ -252,6 +253,27 @@ class SectionsController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
-    }  
+    } 
+    
+    public function getCoursesDropdown()
+    {
+        try {
+            $courses = courses::where('is_archived', 0)
+                ->select('id', 'course_name')
+                ->get();
+
+            return response()->json([
+                'isSuccess' => true,
+                'courses' => $courses,
+            ], 200);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to retrieve courses dropdown.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
     
 }
