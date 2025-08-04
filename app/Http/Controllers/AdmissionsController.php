@@ -680,7 +680,7 @@ public function sendCustomEmail(Request $request)
         return response()->json([
             'isSuccess' => true,
             'message' => 'School campuses fetched successfully.',
-            'data' => $campuses
+            'campuses' => $campuses
         ]);
     } catch (Exception $e) {
         return response()->json([
