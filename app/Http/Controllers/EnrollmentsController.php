@@ -82,8 +82,6 @@ class EnrollmentsController extends Controller
                 ],
                 'course_id' => 'required|exists:courses,id',
                 'section_id' => 'nullable|exists:sections,id',
-                'semester' => 'required|string',
-                'year_level' => 'required|string',
                 'is_enrolled' => 'required|boolean',
                 'is_irregular' => 'boolean',
                 'date_enrolled' => 'required|date',
@@ -138,8 +136,6 @@ class EnrollmentsController extends Controller
                         'section_name' => $sectionName,
                         'course_id' => $request->course_id,
                         'school_year_id' => $admission->school_year_id ?? 1,
-                        'semester' => $request->semester,
-                        'instructor_id' => null,
                         'is_archived' => false,
                     ]);
                     $sectionId = $newSection->id;
@@ -148,14 +144,11 @@ class EnrollmentsController extends Controller
 
             // ✅ Create the enrollment
             $enrollment = enrollments::create([
-                'account_id' => $user->id,
                 'admission_id' => $request->admission_id,
                 'course_id' => $request->course_id,
                 'section_id' => $sectionId,
                 'school_year' => $schoolYear,
-                'semester' => $request->semester,
-                'year_level' => $request->year_level,
-                'enrollment_status' => $request->enrollment_status,
+                'is_enrolled' => 1,
                 'is_irregular' => $request->is_irregular ?? false,
                 'date_enrolled' => $request->date_enrolled,
                 'remarks' => $request->remarks,
