@@ -13,7 +13,7 @@ class sections extends Model
         'section_name',
         'course_id',
         'school_year_id',
-        'instructor_id',
+        'campus_id',
         'is_archive',  
     ];
 
