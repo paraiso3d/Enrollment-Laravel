@@ -13,24 +13,24 @@ use App\Models\subjects;
 
 class SubjectsController extends Controller
 {
-    public function getSubjects()
-    {
-        try {
-            // Retrieve all subjects
-            $subjects = subjects::all();
+   public function getSubjects()
+{
+    try {
+        // Retrieve all subjects with their associated course
+        $subjects = subjects::with('course')->get();
 
-            return response()->json([
-                'isSuccess' => true,
-                'subjects' => $subjects,
-            ], 200);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve subjects.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'subjects' => $subjects,
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve subjects.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
    public function addSubject(Request $request)
 {

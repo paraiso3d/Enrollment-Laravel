@@ -77,8 +77,10 @@ Route::get('getusers', [AccountsController::class, 'getUsers']);
 Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
 Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
 Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])->middleware('auth:sanctum');
+Route::post('sendexamination/{id}', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
 
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');
+Route::post('acceptadmission/{id}', [AdmissionsController::class, 'acceptapplication'])->middleware('auth:sanctum');
 Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
 // Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
 

@@ -86,7 +86,7 @@ class AdmissionsController extends Controller
             if ($request->has('academic_program')) {
                 $query->where('academic_program', $request->academic_program);
             }
-            
+
             // Filter by academic year
             if ($request->has('academic_year')) {
                 $query->where('academic_year', $request->academic_year);
@@ -115,28 +115,28 @@ class AdmissionsController extends Controller
 
 
 
-   public function sendManualAdmissionEmail(Request $request)
-{
-    $request->validate([
-        'emails' => 'required|array',
-        'emails.*' => 'email',
-        'subject' => 'required|string',
-        'custom_message' => 'required|string',
-    ]);
+    public function sendManualAdmissionEmail(Request $request)
+    {
+        $request->validate([
+            'emails' => 'required|array',
+            'emails.*' => 'email',
+            'subject' => 'required|string',
+            'custom_message' => 'required|string',
+        ]);
 
-    $failedEmails = [];
+        $failedEmails = [];
 
-    foreach ($request->emails as $email) {
-        $admission = admissions::where('email', $email)->first();
+        foreach ($request->emails as $email) {
+            $admission = admissions::where('email', $email)->first();
 
-        if (!$admission) {
-            $failedEmails[] = $email;
-            continue;
-        }
+            if (!$admission) {
+                $failedEmails[] = $email;
+                continue;
+            }
 
-        $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9'; // Replace with your actual logo URL
+            $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9'; // Replace with your actual logo URL
 
-        $htmlContent = "
+            $htmlContent = "
         <html>
         <head>
             <style>
@@ -186,213 +186,375 @@ class AdmissionsController extends Controller
         </html>
         ";
 
-        try {
-            Mail::send([], [], function ($message) use ($email, $htmlContent, $request) {
-                $message->to($email)
-                    ->subject($request->subject)
-                    ->setBody($htmlContent, 'text/html');
-            });
-        } catch (\Exception $e) {
-            $failedEmails[] = $email;
+            try {
+                Mail::send([], [], function ($message) use ($email, $htmlContent, $request) {
+                    $message->to($email)
+                        ->subject($request->subject)
+                        ->setBody($htmlContent, 'text/html');
+                });
+            } catch (\Exception $e) {
+                $failedEmails[] = $email;
+            }
         }
-    }
 
-    return response()->json([
-        'isSuccess' => count($failedEmails) === 0,
-        'message' => count($failedEmails) === 0
-            ? 'Emails sent successfully.'
-            : 'Some emails failed to send.',
-        'failed' => $failedEmails
-    ]);
-}
-
-
-public function sendCustomEmail(Request $request)
-{
-    $validated = $request->validate([
-        'recipient_email' => 'required|email',
-        'recipient_name' => 'required|string|max:255',
-        'email_type' => 'required|string', // e.g., entrance_exam, interview_schedule, etc.
-        'custom_data' => 'nullable|array'  // contains placeholders like exam_date, location, etc.
-    ]);
-
-    $template = $this->getEmailTemplate($validated['email_type']);
-
-    if (!$template) {
         return response()->json([
-            'isSuccess' => false,
-            'message' => 'Invalid email template selected.',
-        ], 400);
+            'isSuccess' => count($failedEmails) === 0,
+            'message' => count($failedEmails) === 0
+                ? 'Emails sent successfully.'
+                : 'Some emails failed to send.',
+            'failed' => $failedEmails
+        ]);
     }
 
-    // Replace placeholders
-    $placeholders = $validated['custom_data'] ?? [];
-    $placeholders['name'] = $validated['recipient_name'];
-    foreach ($placeholders as $key => $value) {
-        $template = str_replace('{{' . $key . '}}', $value, $template);
-    }
 
-    // Send the email using Mail::html instead of Mail::raw
-    Mail::html($template, function ($message) use ($validated) {
-        $message->to($validated['recipient_email'], $validated['recipient_name'])
-                ->subject(Str::title(str_replace('_', ' ', $validated['email_type'])));
-    });
-
-    return response()->json([
-        'isSuccess' => true,
-        'message' => 'Email sent successfully.',
-    ]);
-}
-
-
-
-
-
-   public function applyAdmission(Request $request)
-{
-    try {
+    public function sendCustomEmail(Request $request)
+    {
         $validated = $request->validate([
-            'surname' => 'required|string|max:50',
-            'given_name' => 'required|string|max:50',
-            'middle_name' => 'nullable|string|max:50',
-            'middle_initial' => 'nullable|string|max:5',
-            'user_type' => 'nullable|string',
-            'suffix' => 'nullable|string|max:10',
-            'date_of_birth' => 'required|date',
-            'place_of_birth' => 'required|string|max:100',
-            'gender' => 'required|string|max:10',
-            'civil_status' => 'required|string|max:20',
-
-            'street_address' => 'required|string|max:255',
-            'province' => 'required|string|max:100',
-            'city' => 'required|string|max:100',
-            'barangay' => 'required|string|max:100',
-
-            'nationality' => 'required|string|max:50',
-            'religion' => 'required|string|max:50',
-            'ethnic_affiliation' => 'nullable|string|max:50',
-            'telephone_number' => 'nullable|string|max:15',
-            'mobile_number' => 'required|string|max:15',
-            'email' => 'required|email|max:100|unique:admissions,email',
-
-            'is_4ps_member' => 'required|string',
-            'is_insurance_member' => 'required|string',
-            'is_vaccinated' => 'required|string',
-            'is_indigenous' => 'required|string',
-
-            'academic_program_id' => 'required|exists:courses,id',
-            'school_campus_id' => 'required|exists:school_campus,id',
-            'academic_year_id' => 'required|exists:school_years,id',
-            'grade_level' => 'nullable|string|max:50',
-            'semester' => 'nullable|string|max:50',
-            'application_type' => 'required|string|max:50',
-            'classification' => 'required|string|max:50',
-
-            'last_school_attended' => 'nullable|string|max:255',
-            'remarks' => 'nullable|string|max:255',
-
-            'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'recipient_email' => 'required|email',
+            'recipient_name' => 'required|string|max:255',
+            'email_type' => 'required|string', // e.g., entrance_exam, interview_schedule, etc.
+            'custom_data' => 'nullable|array'  // contains placeholders like exam_date, location, etc.
         ]);
 
-        // Fetch names from related tables using IDs
-        $campusName = school_campus::find($validated['school_campus_id'])->campus_name;
-        $academicYear = school_years::find($validated['academic_year_id'])->year;
-        $programName = courses::find($validated['academic_program_id'])->course_name;
+        $template = $this->getEmailTemplate($validated['email_type']);
 
+        if (!$template) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Invalid email template selected.',
+            ], 400);
+        }
 
-        $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
+        // Replace placeholders
+        $placeholders = $validated['custom_data'] ?? [];
+        $placeholders['name'] = $validated['recipient_name'];
+        foreach ($placeholders as $key => $value) {
+            $template = str_replace('{{' . $key . '}}', $value, $template);
+        }
 
-        $admission = admissions::create([
-            'account_id' => null,
-            'applicant_number' => $applicantNumber,
-            'academic_year_id' => $validated['academic_year_id'],
-            'grade_level' => $validated['grade_level'] ?? null,
-            'semester' => $validated['semester'] ?? null,
-            'school_campus_id' => $validated['school_campus_id'],
-            'application_type' => $validated['application_type'],
-            'classification' => $validated['classification'],
-            'academic_program_id' => $validated['academic_program_id'],
-
-            'first_name' => $validated['given_name'],
-            'middle_name' => $validated['middle_name'] ?? '',
-            'last_name' => $validated['surname'],
-            'suffix' => $validated['suffix'] ?? '',
-            'gender' => $validated['gender'],
-            'birthdate' => $validated['date_of_birth'],
-            'birthplace' => $validated['place_of_birth'],
-            'civil_status' => $validated['civil_status'],
-            'email' => $validated['email'],
-            'contact_number' => $validated['mobile_number'],
-            'street_address' => $validated['street_address'],
-            'province' => $validated['province'],
-            'city' => $validated['city'],
-            'barangay' => $validated['barangay'],
-
-            'nationality' => $validated['nationality'],
-            'religion' => $validated['religion'],
-            'ethnic_affiliation' => $validated['ethnic_affiliation'] ?? null,
-            'telephone_number' => $validated['telephone_number'] ?? null,
-            'is_4ps_member' => $validated['is_4ps_member'],
-            'is_insurance_member' => $validated['is_insurance_member'],
-            'is_vaccinated' => $validated['is_vaccinated'],
-            'is_indigenous' => $validated['is_indigenous'],
-
-            'last_school_attended' => $validated['last_school_attended'] ?? null,
-            'remarks' => $validated['remarks'] ?? null,
-            'status' => 'pending',
-
-            'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
-            'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
-            'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
-            'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
-            'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
-        ]);
-
-        // Send email
-        $firstName = $validated['given_name'] ?? 'Applicant';
-        $email = $validated['email'];
-
-        Mail::html("
-            <h2>Admission Application Received</h2>
-            <p>Dear {$firstName},</p>
-            <p>Thank you for applying to our institution.</p>
-            <p>Your application for the <strong>{$programName}</strong> program has been successfully submitted.</p>
-            <p>Please wait while we review your application. Your examination form and further instructions will be sent to you shortly.</p>
-            <p>Your Applicant Number is: <strong>{$applicantNumber}</strong></p>
-            <p>Sincerely,<br>Admissions Office</p>
-        ", function ($message) use ($email) {
-            $message->to($email)
-                ->subject('Your Admission Application Has Been Received');
+        // Send the email using Mail::html instead of Mail::raw
+        Mail::html($template, function ($message) use ($validated) {
+            $message->to($validated['recipient_email'], $validated['recipient_name'])
+                ->subject(Str::title(str_replace('_', ' ', $validated['email_type'])));
         });
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Admission application submitted successfully.',
-            'admission' => $admission,
-            'academic_program' => $programName,
-            'school_campus' => $campusName,
-            'academic_year' => $academicYear,
-                ], 200);
-    } catch (ValidationException $e) {
+            'message' => 'Email sent successfully.',
+        ]);
+    }
+
+
+
+
+
+    public function applyAdmission(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'surname' => 'required|string|max:50',
+                'given_name' => 'required|string|max:50',
+                'middle_name' => 'nullable|string|max:50',
+                'middle_initial' => 'nullable|string|max:5',
+                'user_type' => 'nullable|string',
+                'suffix' => 'nullable|string|max:10',
+                'date_of_birth' => 'required|date',
+                'place_of_birth' => 'required|string|max:100',
+                'gender' => 'required|string|max:10',
+                'civil_status' => 'required|string|max:20',
+
+                'street_address' => 'required|string|max:255',
+                'province' => 'required|string|max:100',
+                'city' => 'required|string|max:100',
+                'barangay' => 'required|string|max:100',
+
+                'nationality' => 'required|string|max:50',
+                'religion' => 'required|string|max:50',
+                'ethnic_affiliation' => 'nullable|string|max:50',
+                'telephone_number' => 'nullable|string|max:15',
+                'mobile_number' => 'required|string|max:15',
+                'email' => 'required|email|max:100|unique:admissions,email',
+
+                'is_4ps_member' => 'required|string',
+                'is_insurance_member' => 'required|string',
+                'is_vaccinated' => 'required|string',
+                'is_indigenous' => 'required|string',
+
+                'academic_program_id' => 'required|exists:courses,id',
+                'school_campus_id' => 'required|exists:school_campus,id',
+                'academic_year_id' => 'required|exists:school_years,id',
+                'grade_level' => 'nullable|string|max:50',
+                'semester' => 'nullable|string|max:50',
+                'application_type' => 'required|string|max:50',
+                'classification' => 'required|string|max:50',
+
+                'last_school_attended' => 'nullable|string|max:255',
+                'remarks' => 'nullable|string|max:255',
+
+                'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            ]);
+
+            // Fetch names from related tables using IDs
+            $campusName = school_campus::find($validated['school_campus_id'])->campus_name;
+            $academicYear = school_years::find($validated['academic_year_id'])->year;
+            $programName = courses::find($validated['academic_program_id'])->course_name;
+
+
+            $applicantNumber = 'APLN-' . now()->format('YmdHis') . rand(100, 999);
+
+            $admission = admissions::create([
+                'account_id' => null,
+                'applicant_number' => $applicantNumber,
+                'academic_year_id' => $validated['academic_year_id'],
+                'grade_level' => $validated['grade_level'] ?? null,
+                'semester' => $validated['semester'] ?? null,
+                'school_campus_id' => $validated['school_campus_id'],
+                'application_type' => $validated['application_type'],
+                'classification' => $validated['classification'],
+                'academic_program_id' => $validated['academic_program_id'],
+
+                'first_name' => $validated['given_name'],
+                'middle_name' => $validated['middle_name'] ?? '',
+                'last_name' => $validated['surname'],
+                'suffix' => $validated['suffix'] ?? '',
+                'gender' => $validated['gender'],
+                'birthdate' => $validated['date_of_birth'],
+                'birthplace' => $validated['place_of_birth'],
+                'civil_status' => $validated['civil_status'],
+                'email' => $validated['email'],
+                'contact_number' => $validated['mobile_number'],
+                'street_address' => $validated['street_address'],
+                'province' => $validated['province'],
+                'city' => $validated['city'],
+                'barangay' => $validated['barangay'],
+
+                'nationality' => $validated['nationality'],
+                'religion' => $validated['religion'],
+                'ethnic_affiliation' => $validated['ethnic_affiliation'] ?? null,
+                'telephone_number' => $validated['telephone_number'] ?? null,
+                'is_4ps_member' => $validated['is_4ps_member'],
+                'is_insurance_member' => $validated['is_insurance_member'],
+                'is_vaccinated' => $validated['is_vaccinated'],
+                'is_indigenous' => $validated['is_indigenous'],
+
+                'last_school_attended' => $validated['last_school_attended'] ?? null,
+                'remarks' => $validated['remarks'] ?? null,
+                'status' => 'pending',
+
+                'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
+                'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
+                'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
+                'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
+                'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
+            ]);
+
+            // Send email
+            $firstName = $validated['given_name'] ?? 'Applicant';
+            $lastName = $validated['surname'] ?? '';
+            $email = $validated['email'];
+            $appointmentDate = now()->addDays(7)->format('m/d/Y'); // Example: 7 days from now
+
+            Mail::html("
+    <div style='font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;'>
+        <h1 style='color: #2c3e50; text-align: center;'> SNL University</h1>
+        
+        <h2 style='color: #2c3e50;'>Good day¹</h2>
+        
+        <h3 style='color: #2c3e50;'>Dear Mr./Ms. {$lastName}, {$firstName},</h3>
+        
+        <p>This is to inform you that we already received your online application to BuBSU - Main Campus.</p>
+        <p>Please take note of your applicant number: <strong>{$applicantNumber}</strong></p>
+        
+        <p>Your appointment schedule for the submission of the required documents will be on <strong>{$appointmentDate}</strong></p>
+        
+        <p>Documents to be submitted:</p>
+        <ol type='A'>
+            <li>A Certified True Copy (with school sets) of School Form D (Form 13b) in Grade 11.</li>
+            <li>A Certified True Copy of Proof of Residency (Barangay Certificate)</li>
+            <li>A Certified True Copy of Certification / Membership Certification / Barangay-issued Certificate / ID (if applicable) of the following:
+                <ol type='1'>
+                    <li>Member of an Indigenous Cultural Community (GCC) / Indigenous People (SP)</li>
+                    <li>Member of Paramed Family's Pilipino Program (APO)</li>
+                    <li>Student with Special Needs (SSN) and other types of disabilities</li>
+                    <li>Graduate of Alternative Learning System (ALS) (Accreditation dump, Equivalency Assessment and Certification)</li>
+                    <li>Child of Solo Parent (Solo parent ID)</li>
+                    <li>Student with Exemplary Armies and Adabute Ability (certification from the School Head)</li>
+                </ol>
+            </li>
+        </ol>
+        
+        <h4 style='color: #2c3e50;'>Grounds for Disqualifications of Application:</h4>
+        <ol>
+            <li>Misrepresentation of the information entered in any of the submitted forms (including but not limited to the application portal)</li>
+            <li>Violation of the application instructions.</li>
+            <li>Non-submission of documents as scheduled.</li>
+        </ol>
+        
+        <h4 style='color: #2c3e50;'>NOTES:</h4>
+        <ul>
+            <li>Transferers and Richerts who attempt to apply through Freshmen definitions will be blacklisted in all SNL programs.</li>
+            <li>Students who have been admitted and enrolled in any programs will only be granted an honorable dismissal once the semester starts.</li>
+        </ul>
+        
+        <h4 style='color: #2c3e50;'>REMINDER:</h4>
+        <p>Successful Applicants must submit the complete required documents on the exact date of their Appointment. A five-to-five Administer will be administered by the SNL Administers and Orientation Services office. Kindly check your Email regularly (inbox and spam) for updates.</p>
+        
+        <p>To view your application details, please <a href='https://yourdomain.com/application-status'>Click Here</a></p>
+        
+        <p style='margin-top: 30px;'>Sincerely,<br>Admissions Office<br>SNL University</p>
+    </div>
+", function ($message) use ($email, $applicantNumber) {
+                $message->to($email)
+                    ->subject('Admission Application Received - Applicant #' . $applicantNumber);
+            });
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Admission application submitted successfully.',
+                'admission' => $admission,
+                'academic_program' => $programName,
+                'school_campus' => $campusName,
+                'academic_year' => $academicYear,
+            ], 200);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to submit admission application.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+
+   public function acceptapplication(Request $request, $id)
+{
+    try {
+        $admission = admissions::findOrFail($id);
+
+        $admission->status = 'accepted';
+        $admission->save();
+
+        // Get applicant details (you can adjust if fields are named differently)
+        $firstName = $admission->given_name ?? 'Applicant';
+        $lastName = $admission->surname ?? '';
+        $email = $admission->email;
+
+        // Send confirmation email
+        if ($email) {
+            Mail::html("
+                <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
+                    <h2>SNL University</h2>
+                    <p>Dear Mr./Ms. {$lastName}, {$firstName},</p>
+
+                    <p>Congratulations on completing your application.</p>
+
+                    <p><strong>NOTE:</strong> You are requested to wait for further instructions from the BulSU Admissions and Orientation Office for your Examination schedule.</p>
+
+                    <p>The schedule of the examination will be sent to your registered email address. Kindly check your email regularly (inbox, spam, or junk).</p>
+
+                    <p>Follow and regularly check the SNL Admissions and Orientation Services Facebook Page for further announcements. For inquiries, you may call us at 09******* local 1087 or email us at <a href='mailto:*******@***.com'>admissions@****.****.***</a>.</p>
+                </div>
+            ", function ($message) use ($email) {
+                $message->to($email)->subject('SNL Application Confirmation');
+            });
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Application accepted and email sent.',
+        ]);
+    } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to submit admission application.',
-            'error' => $e->getMessage(),
-        ], 500);
+            'message' => 'Error: ' . $e->getMessage(),
+        ]);
     }
 }
 
 
+public function sendExamination(Request $request, $id)
+{
+    try {
+        $admission = admissions::with('academic_program', 'schoolCampus')->findOrFail($id);
+
+        // Generate test permit number if not exists
+        if (!$admission->test_permit_no) {
+            $prefix = "BULSU-";
+            $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
+            $admission->test_permit_no = $prefix . $paddedId;
+            $admission->save();
+        }
+
+        $email = $admission->email;
+        $firstName = $admission->given_name ?? 'Applicant';
+        $lastName = $admission->surname ?? '';
+        $programName = $admission->academic_program ? $admission->academic_program->name : 'Your selected course';
+        $testingCenter = $admission->schoolCampus ? $admission->schoolCampus->campus_name : 'BulSU – Main Campus';
+        
+        if ($email) {
+            Mail::html("
+                <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
+                    <h2>SNL University Online Exam Schedule</h2>
+
+                    <p>Good day!</p>
+
+                    <p>
+                        Dear Mr./Ms. {$lastName}, {$firstName},<br>
+                        Course: {$programName} at SNL – {$testingCenter}
+                    </p>
+
+                    <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL 2024–2025) on <strong>March 17, 2024</strong>.</p>
+
+                    <p>
+                        <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
+                        <strong>Room Assignment:</strong> HTF 201<br>
+                        <strong>Building:</strong> HTF Building<br>
+                        <strong>Time:</strong> 07:30 AM – 10:15 AM<br>
+                        <strong>Testing Center:</strong> SNL – {$testingCenter}
+                    </p>
+
+                    <p style='font-style: italic; color: #555;'>*ATSNL will utilize all campuses of the University including ****** as Testing Centers. Your testing center assignment is computer-generated, be sure to double check your Testing Center to avoid confusion.</p>
+
+                    <p><strong>Important Reminders:</strong></p>
+                    <ul>
+                        <li>PRINT your TEST PERMIT and QR Code on a short bond paper.</li>
+                        <li>BRING a VALID ID (with picture) during the exam. If you do not have a valid ID, bring your PSA birth certificate and certificate of enrollment.</li>
+                        <li>Give yourself extra time. Arriving early will help you locate the exam room and settle in.</li>
+                        <li>Only applicants are allowed to enter. Parents/guardians/chaperones are not permitted.</li>
+                        <li>Minimum health protocols will be observed. Face masks are required.</li>
+                        <li>READ the General Guidelines of ATBulSU 2024. <a href='#'>Click here</a>.</li>
+                        <li>To print your TEST PERMIT <a href='#'>click here</a>.</li>
+                    </ul>
+
+                    <p>*Follow and regularly check the BulSU Admissions and Orientation Services Facebook Page for announcements. For inquiries, call 919-7800 local 1087 or email <a href='mailto:admissions@bulsu.edu.ph'>admissions@bulsu.edu.ph</a>.</p>
+                </div>
+            ", function ($message) use ($email) {
+                $message->to($email)->subject('BulSU Exam Schedule Notification');
+            });
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Examination schedule sent via email.',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to send examination email.',
+            'error' => $e->getMessage(),
+        ]);
+    }
+}
 
 
     public function approveAdmission(Request $request, $id)
@@ -529,12 +691,12 @@ public function sendCustomEmail(Request $request)
 
 
     //Email Templates
-   private function getEmailTemplate($type)
-{
-    $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9';
+    private function getEmailTemplate($type)
+    {
+        $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9';
 
-    $templates = [
-        'entrance exam' => "
+        $templates = [
+            'entrance exam' => "
             <html>
             <head>
                 <style>
@@ -583,7 +745,7 @@ public function sendCustomEmail(Request $request)
             </html>
         ",
 
-        'interview_schedule' => '
+            'interview_schedule' => '
             <html>
                 <body>
                     <h2>Interview Schedule</h2>
@@ -595,7 +757,7 @@ public function sendCustomEmail(Request $request)
             </html>
         ',
 
-        'admission_approved' => '
+            'admission_approved' => '
             <html>
                 <body>
                     <h2>Admission Approved</h2>
@@ -605,10 +767,10 @@ public function sendCustomEmail(Request $request)
                 </body>
             </html>
         ',
-    ];
+        ];
 
-    return $templates[$type] ?? null;
-}
+        return $templates[$type] ?? null;
+    }
 
 
 
@@ -653,62 +815,60 @@ public function sendCustomEmail(Request $request)
     }
 
     public function getAcademicProgramsDropdown()
-{
-    try {
-        $data = courses::select('id', 'course_name')->get();
+    {
+        try {
+            $data = courses::select('id', 'course_name')->get();
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Academic programs fetched successfully.',
-            'academic_programs' => $data
-        ]);
-    } catch (Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to fetch academic programs.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Academic programs fetched successfully.',
+                'academic_programs' => $data
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to fetch academic programs.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
 
-   public function getSchoolCampusesDropdown()
-{
-    try {
-        $campuses = school_campus::select('id', 'campus_name')->get();
+    public function getSchoolCampusesDropdown()
+    {
+        try {
+            $campuses = school_campus::select('id', 'campus_name')->get();
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'School campuses fetched successfully.',
-            'campuses' => $campuses
-        ]);
-    } catch (Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to fetch school campuses.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'School campuses fetched successfully.',
+                'campuses' => $campuses
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to fetch school campuses.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
 
-public function getAcademicYearsDropdown()
-{
-    try {
-        $data = school_years::select('id', 'school_year')->get();
+    public function getAcademicYearsDropdown()
+    {
+        try {
+            $data = school_years::select('id', 'school_year')->get();
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Academic years fetched successfully.',
-            'academic_years' => $data
-        ]);
-    } catch (Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to fetch academic years.',
-            'error' => $e->getMessage(),
-        ], 500);
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Academic years fetched successfully.',
+                'academic_years' => $data
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to fetch academic years.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
     }
-}
-
-
 }

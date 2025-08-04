@@ -57,4 +57,22 @@ class Admissions extends Model
         'certificate_of_completion',
     ];
 
+    public function academic_program()
+{
+    return $this->belongsTo(courses::class, 'academic_program_id');
+}
+
+// In your Admission model (app/Models/admissions.php)
+public function schoolCampus()
+{
+    return $this->belongsTo(school_campus::class, 'school_campus_id');
+}
+
+
+public function generateTestPermitNo() {
+    $prefix = "BULSU-";
+    $paddedId = str_pad($this->id, 5, '0', STR_PAD_LEFT);
+    return $prefix . $paddedId;
+}
+
 }

@@ -19,7 +19,7 @@ class subjects extends Model
 
 public function course()
 {
-    return $this->belongsTo(courses::class, 'course_id');
+    return $this->belongsTo(Courses::class, 'course_id');
 }
 
 }
