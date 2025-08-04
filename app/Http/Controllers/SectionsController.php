@@ -134,7 +134,7 @@ class SectionsController extends Controller
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
             'course_id' => 'required|exists:courses,id',
-            'campus_id' => 'required|exists:campus,id',
+            'campus_id' => 'required|exists:school_campus,id',
         ]);
 
         // Check for duplicates excluding current section
