@@ -50,8 +50,7 @@ class SubjectsController extends Controller
             'subject_code' => 'required|string|max:10',
             'subject_name' => 'required|string|max:100',
             'units' => 'required|integer|min:1',
-            'semester' => 'required|string|max:20',
-            'year_level' => 'required|integer|min:1|max:4',
+
         ]);
 
         // 🔁 Check for duplicate subject name in the same course
@@ -83,6 +82,90 @@ class SubjectsController extends Controller
         ], 500);
     }
 }
+
+public function updatesubject(Request $request, $id)
+{
+    try {
+        $user = Auth::user();
+        if (!$user || $user->user_type !== 'admin') {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized access.',
+            ], 403);
+        }
+
+        $subject = subjects::findOrFail($id);
+
+        $validated = $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'subject_code' => 'required|string|max:10',
+            'subject_name' => 'required|string|max:100',
+            'units' => 'required|integer|min:1',
+        ]);
+
+        // Check for duplicate subject name in the same course
+        $duplicate = subjects::where('course_id', $validated['course_id'])
+            ->where('subject_name', $validated['subject_name'])
+            ->where('id', '<>', $id)
+            ->first();
+
+        if ($duplicate) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Subject with the same name already exists in this course.',
+            ], 409);
+        }
+
+        $subject->update($validated);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Subject updated successfully.',
+            'subject' => $subject,
+        ], 200);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to update subject.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+public function deleteSubject($id)
+{
+    try {
+        $user = Auth::user();
+        if (!$user || $user->user_type !== 'admin') {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized access.',
+            ], 403);
+        }
+
+        $subject = subjects::findOrFail($id);
+        $subject->delete();
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Subject deleted successfully.',
+        ], 200);
+
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to delete subject.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+    }           
 
     
 

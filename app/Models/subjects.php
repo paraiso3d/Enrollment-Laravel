@@ -14,8 +14,6 @@ class subjects extends Model
         'subject_code',
         'subject_name',
         'units',
-        'semester',
-        'year_level',
     ];
 
 
