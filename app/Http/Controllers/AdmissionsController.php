@@ -660,7 +660,7 @@ public function sendCustomEmail(Request $request)
         return response()->json([
             'isSuccess' => true,
             'message' => 'Academic programs fetched successfully.',
-            'data' => $data
+            'academic_programs' => $data
         ]);
     } catch (Exception $e) {
         return response()->json([
@@ -699,7 +699,7 @@ public function getAcademicYearsDropdown()
         return response()->json([
             'isSuccess' => true,
             'message' => 'Academic years fetched successfully.',
-            'data' => $data
+            'academic_years' => $data
         ]);
     } catch (Exception $e) {
         return response()->json([
