@@ -84,7 +84,7 @@ class EnrollmentsController extends Controller
                 'section_id' => 'nullable|exists:sections,id',
                 'semester' => 'required|string',
                 'year_level' => 'required|string',
-                'enrollment_status' => 'required|string',
+                'is_enrolled' => 'required|boolean',
                 'is_irregular' => 'boolean',
                 'date_enrolled' => 'required|date',
                 'remarks' => 'nullable|string',

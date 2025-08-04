@@ -165,6 +165,9 @@ Route::prefix('dropdown')->group(function () {
     Route::get('school-campuses', [AdmissionsController::class, 'getSchoolCampusesDropdown']);
     Route::get('academic-programs', [AdmissionsController::class, 'getAcademicProgramsDropdown']);
     Route::get('academic-years', [AdmissionsController::class, 'getAcademicYearsDropdown']);
+    Route::get('campuses', [SchoolCampusController::class, 'getCampusesDropdown']);
+    Route::get('courses', [CoursesController::class, 'getCoursesDropdown']);
+    Route::get('sections', [SectionsController::class, 'getSectionsDropdown']);
 
 });
 

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\school_campus;
 use Illuminate\Http\Request;
 use App\Models\sections;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -221,5 +222,69 @@ class SectionsController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+    //Dropdown for sections
+    public function getSectionsDropdown()
+    {
+        try {
+
+            $sections = sections::where('is_archived', 0)
+                ->with(['course', 'schoolYear'])
+                ->get()
+                ->map(function ($section) {
+                    return [
+                        'id' => $section->id,
+                        'section_name' => $section->section_name,
+                        
+                    ];
+                });
+
+            return response()->json([
+                'isSuccess' => true,
+                'sections' => $sections,
+            ], 200);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to retrieve sections dropdown.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }  
+    
+    public function getCampusDropdown()
+    {
+        try {
+            $user = Auth::user();
+            if (!$user) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthorized.',
+                ], 401);
+            }
+
+            $campuses = school_campus::where('is_archived', 0)
+                ->get()
+                ->map(function ($campus) {
+                    return [
+                        'id' => $campus->id,
+                        'campus_name' => $campus->campus_name,
+                    ];
+                }); 
+
+            return response()->json([
+                'isSuccess' => true,
+                'campuses' => $campuses,
+            ], 200);
+
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to retrieve campuses dropdown.',
+                'error' => $e->getMessage(),
+            ], 500);
+        } 
     }
 }
