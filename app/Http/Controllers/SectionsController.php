@@ -26,7 +26,7 @@ class SectionsController extends Controller
         }
 
         // Retrieve only non-archived sections
-        $sections = sections::with(['course', 'schoolYear'])
+        $sections = sections::with(['course', 'campus'])
             ->where('is_archived', 0)
             ->get()
             ->map(function ($section) {
@@ -37,11 +37,11 @@ class SectionsController extends Controller
                         'id' => $section->course->id,
                         'name' => $section->course->course_name,
                     ] : null,
-                    'school_year' => $section->schoolYear ? [
-                        'id' => $section->schoolYear->id,
-                        'year' => $section->schoolYear->school_year,
-                        'semester' => $section->schoolYear->semester,
+                     'campus' => $section->campus ? [
+                        'id' => $section->campus->id,
+                        'campus_name' => $section->campus->campus_name,
                     ] : null,
+
                     'created_at' => $section->created_at,
                     'updated_at' => $section->updated_at,
                 ];

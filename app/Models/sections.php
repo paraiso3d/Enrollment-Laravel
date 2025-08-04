@@ -33,4 +33,10 @@ public function schoolYear()
     return $this->belongsTo(school_years::class, 'school_year_id');
 }
 
+public function campus()
+{
+    return $this->belongsTo(school_campus::class, 'campus_id');
+}
+
+
 }
