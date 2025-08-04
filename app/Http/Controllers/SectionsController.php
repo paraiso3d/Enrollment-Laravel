@@ -65,6 +65,13 @@ class SectionsController extends Controller
   public function addSection(Request $request)
 {
     try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
         // Validate the request data
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
@@ -117,6 +124,12 @@ class SectionsController extends Controller
     try {
         $section = sections::findOrFail($id);
         $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
 
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
