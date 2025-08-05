@@ -16,6 +16,7 @@ use App\Models\accounts;
 use App\Models\courses;
 use App\Models\school_campus;
 use App\Models\school_years;
+use App\Models\exam_schedule;
 use Illuminate\Validation\Rule;
 use Throwable;
 use Exception;
@@ -483,7 +484,7 @@ class AdmissionsController extends Controller
 public function sendExamination(Request $request, $id)
 {
     try {
-        $admission = admissions::with('academic_program', 'schoolCampus')->findOrFail($id);
+        $admission = admissions::with(['academic_program', 'schoolCampus', 'exam_schedule'])->findOrFail($id);
 
         // Generate test permit number if not exists
         if (!$admission->test_permit_no) {
@@ -493,12 +494,24 @@ public function sendExamination(Request $request, $id)
             $admission->save();
         }
 
+        // Fetch exam schedule
+        $schedule = $admission->exam_schedule;
+        if (!$schedule) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Exam schedule not found for this applicant.',
+            ]);
+        }
+
         $email = $admission->email;
         $firstName = $admission->given_name ?? 'Applicant';
         $lastName = $admission->surname ?? '';
-        $programName = $admission->academic_program ? $admission->academic_program->name : 'Your selected course';
-        $testingCenter = $admission->schoolCampus ? $admission->schoolCampus->campus_name : 'BulSU – Main Campus';
-        
+        $programName = $admission->academic_program->name ?? 'Your selected course';
+        $testingCenter = $schedule->testing_center ?? $admission->schoolCampus->campus_name ?? 'BulSU – Main Campus';
+        $examDate = date('F d, Y', strtotime($schedule->exam_date));
+        $time = date('h:i A', strtotime($schedule->start_time)) . ' – ' . date('h:i A', strtotime($schedule->end_time));
+        $schoolYear = $schedule->school_year ?? '2024–2025';
+
         if ($email) {
             Mail::html("
                 <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
@@ -511,17 +524,17 @@ public function sendExamination(Request $request, $id)
                         Course: {$programName} at SNL – {$testingCenter}
                     </p>
 
-                    <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL 2024–2025) on <strong>March 17, 2024</strong>.</p>
+                    <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL {$schoolYear}) on <strong>{$examDate}</strong>.</p>
 
                     <p>
                         <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
-                        <strong>Room Assignment:</strong> HTF 201<br>
-                        <strong>Building:</strong> HTF Building<br>
-                        <strong>Time:</strong> 07:30 AM – 10:15 AM<br>
+                        <strong>Room Assignment:</strong> {$schedule->room}<br>
+                        <strong>Building:</strong> {$schedule->building}<br>
+                        <strong>Time:</strong> {$time}<br>
                         <strong>Testing Center:</strong> SNL – {$testingCenter}
                     </p>
 
-                    <p style='font-style: italic; color: #555;'>*ATSNL will utilize all campuses of the University including ****** as Testing Centers. Your testing center assignment is computer-generated, be sure to double check your Testing Center to avoid confusion.</p>
+                    <p style='font-style: italic; color: #555;'>*ATSNL will utilize all campuses of the University as Testing Centers. Your testing center assignment is computer-generated, be sure to double check your Testing Center to avoid confusion.</p>
 
                     <p><strong>Important Reminders:</strong></p>
                     <ul>
@@ -530,14 +543,14 @@ public function sendExamination(Request $request, $id)
                         <li>Give yourself extra time. Arriving early will help you locate the exam room and settle in.</li>
                         <li>Only applicants are allowed to enter. Parents/guardians/chaperones are not permitted.</li>
                         <li>Minimum health protocols will be observed. Face masks are required.</li>
-                        <li>READ the General Guidelines of ATBulSU 2024. <a href='#'>Click here</a>.</li>
+                        <li>READ the General Guidelines of ATSNL {$schoolYear}. <a href='#'>Click here</a>.</li>
                         <li>To print your TEST PERMIT <a href='#'>click here</a>.</li>
                     </ul>
 
                     <p>*Follow and regularly check the BulSU Admissions and Orientation Services Facebook Page for announcements. For inquiries, call 919-7800 local 1087 or email <a href='mailto:admissions@bulsu.edu.ph'>admissions@bulsu.edu.ph</a>.</p>
                 </div>
             ", function ($message) use ($email) {
-                $message->to($email)->subject('BulSU Exam Schedule Notification');
+                $message->to($email)->subject('SNL Exam Schedule Notification');
             });
         }
 
@@ -553,6 +566,7 @@ public function sendExamination(Request $request, $id)
         ]);
     }
 }
+
 
 
     public function approveAdmission(Request $request, $id)
@@ -688,87 +702,87 @@ public function sendExamination(Request $request, $id)
 
 
 
-    //Email Templates
-    private function getEmailTemplate($type)
-    {
-        $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9';
+    // //Email Templates
+    // private function getEmailTemplate($type)
+    // {
+    //     $logoUrl = 'https://fileport.io/get/Cf2MRDiXkoVWEMqqlioHTQ09tN9GssRpbtZl4TCuUgneQmez_cby-fPw5cG3IqipODFod8HsL1pa3wPjOllBRufHmN8q62OOGtJH1A5jRTuXVbqlQDxjkWzC8_IWawy3O6OosYMZhtNaSesNASGE55FfUls1iLAgBiNJnZrovFOsuJRYKVqGhZ2UayJR2fuoVn9W8X0_aLwVcbf0Qo8OEuDF8r9HBOg69oGxWGk6_YWsT-0GeqHzIKzVg1Xh6EPvaR7UbkJCrXUz7u_1W5IsX9';
 
-        $templates = [
-            'entrance exam' => "
-            <html>
-            <head>
-                <style>
-                    body {
-                        font-family: Arial, sans-serif;
-                        background-color: #f7f9fb;
-                        color: #333;
-                        padding: 20px;
-                    }
-                    .email-container {
-                        max-width: 600px;
-                        margin: auto;
-                        background: #ffffff;
-                        padding: 30px;
-                        border-radius: 8px;
-                        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-                    }
-                    .header {
-                        text-align: center;
-                        margin-bottom: 30px;
-                    }
-                    .footer {
-                        margin-top: 40px;
-                        font-size: 12px;
-                        color: #888;
-                        text-align: center;
-                    }
-                </style>
-            </head>
-            <body>
-                <div class='email-container'>
-                    <div class='header'>
-                        <img src='{$logoUrl}' alt='Logo' height='80' />
-                        <h2>Entrance Examination</h2>
-                    </div>
-                    <p>Dear <strong>{{first_name}}</strong>,</p>
-                    <p>{{custom_message}}</p>
-                    <p><strong>Program Applied:</strong> {{academic_program}}</p>
-                    <p>We appreciate your interest and look forward to your success with us.</p>
-                    <p>Best regards,<br><strong>Admissions Office</strong></p>
-                    <div class='footer'>
-                        &copy; " . date('Y') . " Your Institution. All rights reserved.
-                    </div>
-                </div>
-            </body>
-            </html>
-        ",
+    //     $templates = [
+    //         'entrance exam' => "
+    //         <html>
+    //         <head>
+    //             <style>
+    //                 body {
+    //                     font-family: Arial, sans-serif;
+    //                     background-color: #f7f9fb;
+    //                     color: #333;
+    //                     padding: 20px;
+    //                 }
+    //                 .email-container {
+    //                     max-width: 600px;
+    //                     margin: auto;
+    //                     background: #ffffff;
+    //                     padding: 30px;
+    //                     border-radius: 8px;
+    //                     box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    //                 }
+    //                 .header {
+    //                     text-align: center;
+    //                     margin-bottom: 30px;
+    //                 }
+    //                 .footer {
+    //                     margin-top: 40px;
+    //                     font-size: 12px;
+    //                     color: #888;
+    //                     text-align: center;
+    //                 }
+    //             </style>
+    //         </head>
+    //         <body>
+    //             <div class='email-container'>
+    //                 <div class='header'>
+    //                     <img src='{$logoUrl}' alt='Logo' height='80' />
+    //                     <h2>Entrance Examination</h2>
+    //                 </div>
+    //                 <p>Dear <strong>{{first_name}}</strong>,</p>
+    //                 <p>{{custom_message}}</p>
+    //                 <p><strong>Program Applied:</strong> {{academic_program}}</p>
+    //                 <p>We appreciate your interest and look forward to your success with us.</p>
+    //                 <p>Best regards,<br><strong>Admissions Office</strong></p>
+    //                 <div class='footer'>
+    //                     &copy; " . date('Y') . " Your Institution. All rights reserved.
+    //                 </div>
+    //             </div>
+    //         </body>
+    //         </html>
+    //     ",
 
-            'interview_schedule' => '
-            <html>
-                <body>
-                    <h2>Interview Schedule</h2>
-                    <p>Dear {{name}},</p>
-                    <p>You are scheduled for an interview as part of the admission process.</p>
-                    <p><strong>Date:</strong> {{interview_date}}</p>
-                    <p><strong>Platform:</strong> {{platform}}</p>
-                </body>
-            </html>
-        ',
+    //         'interview_schedule' => '
+    //         <html>
+    //             <body>
+    //                 <h2>Interview Schedule</h2>
+    //                 <p>Dear {{name}},</p>
+    //                 <p>You are scheduled for an interview as part of the admission process.</p>
+    //                 <p><strong>Date:</strong> {{interview_date}}</p>
+    //                 <p><strong>Platform:</strong> {{platform}}</p>
+    //             </body>
+    //         </html>
+    //     ',
 
-            'admission_approved' => '
-            <html>
-                <body>
-                    <h2>Admission Approved</h2>
-                    <p>Dear {{name}},</p>
-                    <p>Congratulations! Your application for admission has been approved.</p>
-                    <p>Please proceed with the next steps listed on our portal.</p>
-                </body>
-            </html>
-        ',
-        ];
+    //         'admission_approved' => '
+    //         <html>
+    //             <body>
+    //                 <h2>Admission Approved</h2>
+    //                 <p>Dear {{name}},</p>
+    //                 <p>Congratulations! Your application for admission has been approved.</p>
+    //                 <p>Please proceed with the next steps listed on our portal.</p>
+    //             </body>
+    //         </html>
+    //     ',
+    //     ];
 
-        return $templates[$type] ?? null;
-    }
+    //     return $templates[$type] ?? null;
+    // }
 
 
 

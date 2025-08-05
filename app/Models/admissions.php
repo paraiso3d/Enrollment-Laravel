@@ -75,4 +75,10 @@ public function generateTestPermitNo() {
     return $prefix . $paddedId;
 }
 
+public function exam_schedule()
+{
+    return $this->hasOne(exam_schedule::class, 'applicant_id', 'id');
+}
+
+
 }
