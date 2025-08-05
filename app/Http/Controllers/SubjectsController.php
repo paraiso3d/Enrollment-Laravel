@@ -55,12 +55,15 @@ class SubjectsController extends Controller
     try {
         // 🔐 Check if user is authenticated and is admin
         $user = Auth::user();
-        if (!$user || $user->role_name !== 'admin') {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Unauthorized access.',
-            ], 403);
-        }
+    
+
+if (!$user) {
+    return response()->json([
+        'isSuccess' => false,
+        'message' => 'User not authenticated.',
+    ], 401);
+}
+
 
         // ✅ Validate input
         $validated = $request->validate([
