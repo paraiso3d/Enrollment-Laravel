@@ -29,7 +29,9 @@ class SubjectsController extends Controller
                     'course' => [
                         'id' => $subject->course->id,
                         'course_name' => $subject->course->course_name,
+                        'course_type' => $subject->course->course_type,
                         'course_code' => $subject->course->course_code,
+                        'course_description' => $subject->course->course_description,
                     ]
                 ];
             });
