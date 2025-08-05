@@ -286,7 +286,6 @@ class AdmissionsController extends Controller
                 'academic_program_id' => 'required|exists:courses,id',
                 'school_campus_id' => 'required|exists:school_campus,id',
                 'academic_year_id' => 'required|exists:school_years,id',
-                'grade_level' => 'nullable|string|max:50',
                 'semester' => 'nullable|string|max:50',
                 'application_type' => 'required|string|max:50',
 
@@ -312,7 +311,6 @@ class AdmissionsController extends Controller
                 'account_id' => null,
                 'applicant_number' => $applicantNumber,
                 'academic_year_id' => $validated['academic_year_id'],
-                'grade_level' => $validated['grade_level'] ?? null,
                 'semester' => $validated['semester'] ?? null,
                 'school_campus_id' => $validated['school_campus_id'],
                 'application_type' => $validated['application_type'],

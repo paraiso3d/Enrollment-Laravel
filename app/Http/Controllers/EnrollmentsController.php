@@ -172,4 +172,7 @@ class EnrollmentsController extends Controller
             ], 500);
         }
     }
+
+    
+
 }
