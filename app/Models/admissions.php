@@ -77,8 +77,13 @@ public function generateTestPermitNo() {
 
 public function exam_schedule()
 {
-    return $this->hasOne(exam_schedule::class, 'applicant_id', 'id');
+    return $this->hasOne(exam_schedules::class, 'applicant_id', 'id');
 }
+public function school_years()
+{
+    return $this->belongsTo(school_years::class, 'academic_year_id');
+}
+
 
 
 }

@@ -16,8 +16,23 @@ class SubjectsController extends Controller
    public function getSubjects()
 {
     try {
-        // Retrieve all subjects with their associated course
-        $subjects = subjects::with('course')->get();
+        // Retrieve all non-archived subjects with their associated course
+        $subjects = subjects::with('course')
+            ->where('is_archived', 0)
+            ->get()
+            ->map(function ($subject) {
+                return [
+                    'id' => $subject->id,
+                    'subject_code' => $subject->subject_code,
+                    'subject_name' => $subject->subject_name,
+                    'units' => $subject->units,
+                    'course' => [
+                        'id' => $subject->course->id,
+                        'course_name' => $subject->course->course_name,
+                        'course_code' => $subject->course->course_code,
+                    ]
+                ];
+            });
 
         return response()->json([
             'isSuccess' => true,
@@ -31,6 +46,7 @@ class SubjectsController extends Controller
         ], 500);
     }
 }
+
 
    public function addSubject(Request $request)
 {
