@@ -46,6 +46,14 @@ class Admissions extends Model
         'is_vaccinated',
         'is_indigenous',
 
+        'guardian_name',
+        'guardian_contact',
+        'mother_name',
+        'mother_contact',
+        'father_name',
+        'father_contact',
+
+
         'last_school_attended',
         'remarks',
         'status',
@@ -58,36 +66,35 @@ class Admissions extends Model
     ];
 
     public function academic_program()
-{
-    return $this->belongsTo(courses::class, 'academic_program_id');
-}
+    {
+        return $this->belongsTo(courses::class, 'academic_program_id');
+    }
 
-// In your Admission model (app/Models/admissions.php)
-public function schoolCampus()
-{
-    return $this->belongsTo(school_campus::class, 'school_campus_id');
-}
+    // In your Admission model (app/Models/admissions.php)
+    public function schoolCampus()
+    {
+        return $this->belongsTo(school_campus::class, 'school_campus_id');
+    }
 
 
-public function generateTestPermitNo() {
-    $prefix = "BULSU-";
-    $paddedId = str_pad($this->id, 5, '0', STR_PAD_LEFT);
-    return $prefix . $paddedId;
-}
+    public function generateTestPermitNo()
+    {
+        $prefix = "BULSU-";
+        $paddedId = str_pad($this->id, 5, '0', STR_PAD_LEFT);
+        return $prefix . $paddedId;
+    }
 
-public function exam_schedule()
-{
-    return $this->hasOne(exam_schedules::class, 'applicant_id', 'id');
-}
-public function school_years()
-{
-    return $this->belongsTo(school_years::class, 'academic_year_id');
-}
+    public function exam_schedule()
+    {
+        return $this->hasOne(exam_schedules::class, 'applicant_id', 'id');
+    }
+    public function school_years()
+    {
+        return $this->belongsTo(school_years::class, 'academic_year_id');
+    }
 
     public function course()
     {
         return $this->belongsTo(courses::class, 'academic_program_id');
     }
-
-
 }

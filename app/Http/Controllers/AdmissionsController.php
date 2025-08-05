@@ -290,6 +290,14 @@ class AdmissionsController extends Controller
                 'semester' => 'nullable|string|max:50',
                 'application_type' => 'required|string|max:50',
 
+                'guardian_name' => 'nullable|string|max:100',
+                'guardian_contact' => 'nullable|string|max:20',
+                'mother_name' => 'nullable|string|max:100',
+                'mother_contact' => 'nullable|string|max:20',
+                'father_name' => 'nullable|string|max:100',
+                'father_contact' => 'nullable|string|max:20',
+
+
                 'last_school_attended' => 'nullable|string|max:255',
                 'remarks' => 'nullable|string|max:255',
 
@@ -341,6 +349,14 @@ class AdmissionsController extends Controller
                 'is_insurance_member' => $validated['is_insurance_member'],
                 'is_vaccinated' => $validated['is_vaccinated'],
                 'is_indigenous' => $validated['is_indigenous'],
+
+                'guardian_name' => $validated['guardian_name'] ?? null,
+                'guardian_contact' => $validated['guardian_contact'] ?? null,
+                'mother_name' => $validated['mother_name'] ?? null,
+                'mother_contact' => $validated['mother_contact'] ?? null,
+                'father_name' => $validated['father_name'] ?? null,
+                'father_contact' => $validated['father_contact'] ?? null,
+
 
                 'last_school_attended' => $validated['last_school_attended'] ?? null,
                 'remarks' => $validated['remarks'] ?? null,
