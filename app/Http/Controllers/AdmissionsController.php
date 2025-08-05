@@ -455,6 +455,8 @@ class AdmissionsController extends Controller
     }
 
 
+
+    
    public function acceptapplication(Request $request, $id)
 {
     try {
@@ -729,72 +731,72 @@ class AdmissionsController extends Controller
 
 
 
-    public function approveAdmission(Request $request, $id)
-    {
-        try {
-            $approver = auth()->user();
+    // public function approveAdmission(Request $request, $id)
+    // {
+    //     try {
+    //         $approver = auth()->user();
 
-            if (!$approver) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Unauthenticated access.',
-                ], 401);
-            }
+    //         if (!$approver) {
+    //             return response()->json([
+    //                 'isSuccess' => false,
+    //                 'message' => 'Unauthenticated access.',
+    //             ], 401);
+    //         }
 
-            $admission = admissions::findOrFail($id);
+    //         $admission = admissions::findOrFail($id);
 
-            $admission->status = 'approved';
-            $admission->status_by = $approver->id;
-            $admission->is_admitted = 1;
-            $admission->save();
+    //         $admission->status = 'approved';
+    //         $admission->status_by = $approver->id;
+    //         $admission->is_admitted = 1;
+    //         $admission->save();
 
-            // Dynamic data
-            $firstName = $admission->first_name ?? 'Applicant';
-            $email = $admission->email ?? 'no-reply@example.com';
-            $course = $admission->academic_program ?? 'your chosen program';
+    //         // Dynamic data
+    //         $firstName = $admission->first_name ?? 'Applicant';
+    //         $email = $admission->email ?? 'no-reply@example.com';
+    //         $course = $admission->academic_program ?? 'your chosen program';
 
-            // HTML Email
-            $html = '
-            <div style="font-family: Arial, sans-serif; color: #333;">
-                <div style="text-align: center; padding: 10px;">
-                    <img src="https://yourdomain.com/logo.png" alt="Logo" style="max-height: 60px;">
-                </div>
-                <div style="padding: 20px;">
-                    <h2 style="color: #2c3e50;">Congratulations, ' . e($firstName) . '!</h2>
-                    <p>We are thrilled to inform you that your application for the <strong>' . e($course) . '</strong> program has been <span style="color: green;"><strong>approved</strong></span>.</p>
-                    <p>We look forward to welcoming you to our institution.</p>
-                    <p>Thank you for choosing us!</p>
-                </div>
-                <hr style="border: none; border-top: 1px solid #ccc;">
-                <div style="text-align: center; font-size: 12px; color: #888; padding: 10px;">
-                    &copy; ' . date('Y') . ' Your School Name. All rights reserved.
-                </div>
-            </div>
-        ';
+    //         // HTML Email
+    //         $html = '
+    //         <div style="font-family: Arial, sans-serif; color: #333;">
+    //             <div style="text-align: center; padding: 10px;">
+    //                 <img src="https://yourdomain.com/logo.png" alt="Logo" style="max-height: 60px;">
+    //             </div>
+    //             <div style="padding: 20px;">
+    //                 <h2 style="color: #2c3e50;">Congratulations, ' . e($firstName) . '!</h2>
+    //                 <p>We are thrilled to inform you that your application for the <strong>' . e($course) . '</strong> program has been <span style="color: green;"><strong>approved</strong></span>.</p>
+    //                 <p>We look forward to welcoming you to our institution.</p>
+    //                 <p>Thank you for choosing us!</p>
+    //             </div>
+    //             <hr style="border: none; border-top: 1px solid #ccc;">
+    //             <div style="text-align: center; font-size: 12px; color: #888; padding: 10px;">
+    //                 &copy; ' . date('Y') . ' Your School Name. All rights reserved.
+    //             </div>
+    //         </div>
+    //     ';
 
-            Mail::html($html, function ($message) use ($email) {
-                $message->to($email)
-                    ->subject('🎉 Your Admission Has Been Approved');
-            });
+    //         Mail::html($html, function ($message) use ($email) {
+    //             $message->to($email)
+    //                 ->subject('🎉 Your Admission Has Been Approved');
+    //         });
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Admission approved and notification email sent.',
-                'admission' => $admission,
-            ], 200);
-        } catch (ModelNotFoundException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Admission not found.',
-            ], 404);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to approve admission.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
+    //         return response()->json([
+    //             'isSuccess' => true,
+    //             'message' => 'Admission approved and notification email sent.',
+    //             'admission' => $admission,
+    //         ], 200);
+    //     } catch (ModelNotFoundException $e) {
+    //         return response()->json([
+    //             'isSuccess' => false,
+    //             'message' => 'Admission not found.',
+    //         ], 404);
+    //     } catch (Throwable $e) {
+    //         return response()->json([
+    //             'isSuccess' => false,
+    //             'message' => 'Failed to approve admission.',
+    //             'error' => $e->getMessage(),
+    //         ], 500);
+    //     }
+    // }
 
 
 
