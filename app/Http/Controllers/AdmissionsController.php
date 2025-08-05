@@ -286,7 +286,6 @@ class AdmissionsController extends Controller
                 'grade_level' => 'nullable|string|max:50',
                 'semester' => 'nullable|string|max:50',
                 'application_type' => 'required|string|max:50',
-                'classification' => 'required|string|max:50',
 
                 'last_school_attended' => 'nullable|string|max:255',
                 'remarks' => 'nullable|string|max:255',
@@ -314,7 +313,6 @@ class AdmissionsController extends Controller
                 'semester' => $validated['semester'] ?? null,
                 'school_campus_id' => $validated['school_campus_id'],
                 'application_type' => $validated['application_type'],
-                'classification' => $validated['classification'],
                 'academic_program_id' => $validated['academic_program_id'],
 
                 'first_name' => $validated['given_name'],
@@ -856,7 +854,7 @@ public function sendExamination(Request $request, $id)
     public function getAcademicYearsDropdown()
     {
         try {
-            $data = school_years::select('id', 'school_year')->get();
+            $data = school_years::select('id', 'school_year', 'semester')->get();
 
             return response()->json([
                 'isSuccess' => true,

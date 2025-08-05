@@ -63,6 +63,8 @@ class EnrollmentsController extends Controller
         }
     }
 
+
+
     //This function handles the creation of a new enrollment.
     public function storeEnrollment(Request $request)
     {
