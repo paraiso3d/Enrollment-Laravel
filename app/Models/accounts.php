@@ -70,4 +70,5 @@ public function userType()
     return $this->belongsTo(user_types::class, 'user_type_id');
 }
 
+
 }

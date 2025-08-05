@@ -38,9 +38,15 @@ return [
     'guards' => [
         'web' => [
             'driver' => 'session',
-            'provider' => 'users',
+            'provider' => 'accounts',
         ],
     ],
+
+     'sanctum' => [
+        'driver' => 'sanctum',
+        'provider' => 'accounts', // ← add this line
+    ],
+
 
     /*
     |--------------------------------------------------------------------------
@@ -60,7 +66,7 @@ return [
     */
 
     'providers' => [
-    'users' => [
+    'accounts' => [
         'driver' => 'eloquent',
         'model' => App\Models\accounts::class,
     ],
