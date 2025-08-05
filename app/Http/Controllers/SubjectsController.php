@@ -53,9 +53,10 @@ class SubjectsController extends Controller
     public function addSubject(Request $request)
     {
         try {
-            $user = Auth::user();
+            $user = auth()->user();
+            $user->load('userType');
 
-            if ($user->role_name !== 'admin') {
+            if (!$user || $user->userType?->role_name !== 'admin') {
                 return response()->json([
                     'isSuccess' => false,
                     'message' => 'Unauthorized access.',
@@ -104,9 +105,10 @@ class SubjectsController extends Controller
     public function updatesubject(Request $request, $id)
     {
         try {
-            $user = Auth::user();
+            $user = auth()->user();
+            $user->load('userType');
 
-            if ($user->role_name !== 'admin') {
+            if (!$user || $user->userType?->role_name !== 'admin') {
                 return response()->json([
                     'isSuccess' => false,
                     'message' => 'Unauthorized access.',
@@ -160,9 +162,10 @@ class SubjectsController extends Controller
     public function deleteSubject($id)
     {
         try {
-            $user = Auth::user();
+            $user = auth()->user();
+            $user->load('userType'); // Eager load the relationship
 
-            if ($user->role_name !== 'admin') {
+            if (!$user || $user->userType?->role_name !== 'admin') {
                 return response()->json([
                     'isSuccess' => false,
                     'message' => 'Unauthorized access.',

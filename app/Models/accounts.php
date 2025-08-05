@@ -64,7 +64,7 @@ class accounts extends Authenticatable
         'is_verified',
     ];
 
-    // App\Models\accounts.php
+
 public function userType()
 {
     return $this->belongsTo(user_types::class, 'user_type_id');
