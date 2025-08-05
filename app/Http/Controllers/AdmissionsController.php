@@ -265,6 +265,7 @@ class AdmissionsController extends Controller
                 'place_of_birth' => 'required|string|max:100',
                 'gender' => 'required|string|max:10',
                 'civil_status' => 'required|string|max:20',
+                'blood_type'=> 'required|string',
 
                 'street_address' => 'required|string|max:255',
                 'province' => 'required|string|max:100',
@@ -340,6 +341,7 @@ class AdmissionsController extends Controller
                 'province' => $validated['province'],
                 'city' => $validated['city'],
                 'barangay' => $validated['barangay'],
+                'blood_type' =>$validated['blood_type'],
 
                 'nationality' => $validated['nationality'],
                 'religion' => $validated['religion'],
