@@ -84,6 +84,10 @@ public function school_years()
     return $this->belongsTo(school_years::class, 'academic_year_id');
 }
 
+    public function course()
+    {
+        return $this->belongsTo(courses::class, 'academic_program_id');
+    }
 
 
 }

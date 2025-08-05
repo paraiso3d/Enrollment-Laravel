@@ -55,7 +55,7 @@ class SubjectsController extends Controller
     try {
         // 🔐 Check if user is authenticated and is admin
         $user = Auth::user();
-        if (!$user || $user->user_type !== 'admin') {
+        if (!$user || $user->role_name !== 'admin') {
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Unauthorized access.',
@@ -105,7 +105,7 @@ public function updatesubject(Request $request, $id)
 {
     try {
         $user = Auth::user();
-        if (!$user || $user->user_type !== 'admin') {
+        if (!$user || $user->role_name !== 'admin') {
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Unauthorized access.',

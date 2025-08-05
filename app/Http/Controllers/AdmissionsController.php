@@ -13,11 +13,13 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Models\accounts;
+use App\Models\AdmissionReservation;
 use App\Models\courses;
 use App\Models\school_campus;
 use App\Models\school_years;
 use App\Models\exam_schedules;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Carbon;
 use Throwable;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -587,6 +589,125 @@ class AdmissionsController extends Controller
         }
     }
 
+ public function reserveSlot(Request $request, $id)
+{
+    try {
+        // Validate schedule date
+        $request->validate([
+            'schedule_date' => 'required|date|after_or_equal:today',
+        ]);
+
+        // Fetch admission with course
+        $admission = admissions::with('course')->findOrFail($id);
+
+        if (!$admission->course) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Missing course data.',
+            ]);
+        }
+
+        $currentYear = Carbon::now()->year;
+        $nextYear = $currentYear + 1;
+        $academicYearText = $currentYear . '-' . $nextYear;
+
+        // Format dynamic schedule range (e.g. June 1 to 15 of current year)
+        $scheduleStart = Carbon::create($currentYear, 6, 1)->format('F d');
+        $scheduleEnd = Carbon::create($currentYear, 6, 15)->format('d, Y');
+
+        // Create reservation
+        $reservation = new AdmissionReservation();
+        $reservation->admission_id = $id;
+        $reservation->schedule_date = $request->schedule_date;
+        $reservation->academic_year_id = $admission->academic_year_id;
+        $reservation->reservation_code = strtoupper(uniqid('RES-'));
+        $reservation->save();
+
+        // Use data directly from admissions table
+        $student_name = $admission->given_name . ' ' . $admission->surname;
+        $reservation_date = date('F d, Y', strtotime($request->schedule_date));
+
+        // Email HTML content
+        $htmlContent = '
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <meta charset="UTF-8">
+            <title>SNL Online Reservation</title>
+            <style>
+                body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; }
+                .header { color: #0056b3; border-bottom: 2px solid #0056b3; padding-bottom: 10px; }
+                .footer { margin-top: 20px; font-size: 0.9em; color: #666; border-top: 1px solid #eee; padding-top: 10px; }
+                .note { background-color: #f8f9fa; padding: 10px; border-left: 4px solid #6c757d; margin: 15px 0; }
+            </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>Bulacan State University PRISMS Online Reservation</h1>
+                <p>www.prismsouth.org.au/commons/cn</p>
+            </div>
+
+            <h2>Computational Quarters for AZ '. $academicYearText. ' </h2>
+
+            <h3>Name: ' . htmlspecialchars($student_name) . '</h3>
+            <p>Course: ' . htmlspecialchars($admission->course->course_name) . '</p>
+
+            <p>In order for the Admission Office to facilitate your pre-enrollment, you must proceed to the BulSU Admission and Registration Office (Main Campus) on your <strong>specified schedule date</strong> from' . $scheduleStart . ' to ' . $scheduleEnd . '..</p>
+
+            <p>Please bring the following:</p>
+            <ol>
+                <li>Printed copy of this reservation form</li>
+                <li>Visit the Infirmary for Medical/Dental Examination and submit:
+                    <ul>
+                        <li>Completed Student Health Assessment Form</li>
+                        <li>Original copy of Chest X-ray result</li>
+                        <li>Medical Certificate (if applicable)</li>
+                        <li>Valid ID (if applicable)</li>
+                    </ul>
+                </li>
+            </ol>
+
+            <div class="note">
+                <p><strong>Important:</strong> Failure to visit on your specified date will result in cancellation of your reservation and you will lose the opportunity to be admitted to the University.</p>
+            </div>
+
+            <h3>RESERVATION SCHEDULE AY ' . $academicYearText . '</h3>
+            <p><strong>Your reservation date:</strong> ' . htmlspecialchars($reservation_date) . '</p>
+            <p>Please be guided accordingly.</p>
+            <p>Thank you for choosing BulSU!</p>
+
+            <div class="footer">
+                <p><em>This is an automatically generated email - please do not reply.</em></p>
+            </div>
+        </body>
+        </html>';
+
+        // Send email
+        Mail::send([], [], function ($message) use ($admission, $htmlContent) {
+            $message->to($admission->email)
+                    ->subject('SNL Online Reservation Confirmation')
+                    ->setBody($htmlContent, 'text/html');
+        });
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Reservation created and email sent successfully.',
+        ]);
+
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Reservation failed.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 
 
 

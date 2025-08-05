@@ -78,6 +78,8 @@ Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
 Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
 Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])->middleware('auth:sanctum');
 Route::post('sendexamination/{id}', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
+Route::post('/reserve-slot/{id}', [AdmissionsController::class, 'reserveSlot']);
+
 
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');
 Route::post('acceptadmission/{id}', [AdmissionsController::class, 'acceptapplication'])->middleware('auth:sanctum');
