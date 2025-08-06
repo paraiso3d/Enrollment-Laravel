@@ -10,7 +10,7 @@ class DepartmentsController extends Controller
      // Get all departments (non-archived)
     public function getDepartments()
     {
-        $departments = departments::where('is_archive', false)->get();
+        $departments = departments::where('is_archive', 0)->get();
 
         return response()->json([
             'isSuccess' => true,
