@@ -20,21 +20,25 @@ class DepartmentsController extends Controller
 
     // Add a new department
     public function addDepartment(Request $request)
-    {
-        $validated = $request->validate([
-            'department_name' => 'required|string|max:100',
-            'abbreviation' => 'nullable|string|max:20',
-            'description' => 'nullable|string',
-        ]);
+{
+    $validated = $request->validate([
+        'department_name' => 'required|string|max:100',
+        'description' => 'nullable|string',
+    ]);
 
-        $department = departments::create($validated);
+    // Automatically generate abbreviation from department name
+    $validated['abbreviation'] = strtoupper(
+        implode('', array_map(fn($word) => $word[0], explode(' ', $validated['department_name'])))
+    );
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Department created successfully',
-            'department' => $department
-        ]);
-    }
+    $department = departments::create($validated);
+
+    return response()->json([
+        'isSuccess' => true,
+        'message' => 'Department created successfully',
+        'department' => $department
+    ]);
+}
 
     // Update a department
     public function updateDepartment(Request $request, $id)
