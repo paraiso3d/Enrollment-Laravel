@@ -14,7 +14,7 @@ class DepartmentsController extends Controller
 
         return response()->json([
             'isSuccess' => true,
-            'data' => $departments
+            'department' => $departments
         ]);
     }
 
@@ -53,7 +53,7 @@ class DepartmentsController extends Controller
         return response()->json([
             'isSuccess' => true,
             'message' => 'Department updated successfully',
-            'data' => $department
+            'department' => $department
         ]);
     }
 
