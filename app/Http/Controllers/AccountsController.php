@@ -77,6 +77,8 @@ class AccountsController extends Controller
             'place_of_birth' => 'nullable|string|max:100',
             'gender' => 'nullable|string|max:10',
             'civil_status' => 'nullable|string|max:20',
+            'department_id' => 'nullable|exists:departments,id',
+
 
             // Address & Contact Info
             'street_address' => 'nullable|string|max:255',
