@@ -9,7 +9,9 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\students;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 use App\Models\accounts;
 
@@ -23,30 +25,55 @@ class AuthController extends Controller
             'password' => 'required|string',
         ]);
 
-        // Find user with userType relation
+        $login = $request->login;
+        $password = $request->password;
+
+        // Try logging in as an account
         $user = accounts::with('userType')
-            ->where('email', $request->login)
-            ->orWhere('username', $request->login)
+            ->where('email', $login)
+            ->orWhere('username', $login)
             ->first();
 
-        if ($user && Hash::check($request->password, $user->password)) {
+        if ($user && Hash::check($password, $user->password)) {
             $token = $user->createToken('auth-token')->plainTextToken;
 
-            // Format the response
             $userData = $user->makeHidden(['password', 'created_at', 'updated_at']);
             $userData['role_name'] = $user->userType->role_name ?? null;
 
+            Log::info('Logged in as account', ['user_id' => $user->id]);
+
             return response()->json([
                 'isSuccess' => true,
-                'message' => 'Logged in successfully',
+                'message' => 'Logged in successfully as account',
                 'token' => $token,
                 'user' => $userData,
             ], 200);
         }
 
+        // Try logging in as a student
+        $student = students::where('student_number', $login)->first();
+
+        if ($student && Hash::check($password, $student->password)) {
+            $token = $student->createToken('auth-token')->plainTextToken;
+
+            $studentData = $student->makeHidden(['password', 'created_at', 'updated_at']);
+
+            Log::info('Logged in as student', ['student_id' => $student->id]);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Logged in successfully as student',
+                'token' => $token,
+                'user' => $studentData,
+            ], 200);
+        }
+
+        // If neither account nor student matched
+        Log::warning('Login failed for user', ['login' => $login]);
+
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Invalid Email/Username or Password.',
+            'message' => 'Invalid credentials.',
         ], 401);
 
     } catch (ValidationException $e) {
@@ -56,6 +83,7 @@ class AuthController extends Controller
             'errors' => $e->errors(),
         ], 422);
     } catch (\Throwable $e) {
+        Log::error('Login error', ['error' => $e->getMessage()]);
         return response()->json([
             'isSuccess' => false,
             'message' => 'Login failed.',

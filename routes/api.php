@@ -88,20 +88,21 @@ Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])
 Route::post('sendexamination/{id}', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
 Route::post('/reserve-slot/{id}', [AdmissionsController::class, 'reserveSlot']);
 
-
+Route::middleware('auth:sanctum')->group(function () {
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');
 Route::post('acceptadmission/{id}', [AdmissionsController::class, 'acceptapplication'])->middleware('auth:sanctum');
 Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
 // Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
-
+});
 // //Enrellments Management
-// Route::middleware('auth:sanctum')->group(function () {
+Route::middleware('auth:sanctum')->group(function () {
 //     Route::get('listenrollments', [EnrollmentsController::class, 'listEnrollments']);
-//     Route::post('storeenrollment', [EnrollmentsController::class, 'storeEnrollment']);
+    Route::post('enrollstudent/{id}', [EnrollmentsController::class, 'enrollStudent']);
+     Route::post('enrollnow', [EnrollmentsController::class, 'enrollNow']);
 //     Route::post('updateenrollment/{id}', [EnrollmentsController::class, 'updateEnrollment']);
 //     Route::post('deleteenrollment/{id}', [EnrollmentsController::class, 'deleteEnrollment']);
 //     Route::post('restoreenrollment/{id}', [EnrollmentsController::class, 'restoreEnrollment']);
-// });
+});
 
 
 

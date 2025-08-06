@@ -64,5 +64,10 @@ public function userType()
     return $this->belongsTo(user_types::class, 'user_type_id');
 }
 
+public function student()
+{
+    return $this->hasOne(students::class, 'admission_id', 'id');
+}
+
 
 }

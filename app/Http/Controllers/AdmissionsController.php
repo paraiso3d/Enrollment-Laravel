@@ -462,7 +462,7 @@ class AdmissionsController extends Controller
     try {
         $admission = admissions::findOrFail($id);
 
-        $admission->status = 'accepted';
+        $admission->status = 'approved';
         $admission->save();
 
         // Get applicant details (you can adjust if fields are named differently)
