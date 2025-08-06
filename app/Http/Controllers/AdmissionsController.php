@@ -460,6 +460,15 @@ class AdmissionsController extends Controller
    public function acceptapplication(Request $request, $id)
 {
     try {
+         $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        
         $admission = admissions::findOrFail($id);
 
         $admission->status = 'approved';
