@@ -12,6 +12,7 @@ use App\Http\Controllers\SchoolCampusController;
 use App\Http\Controllers\AdmissionsController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\SubjectsController;
+use App\Http\Controllers\DepartmentsController;
 
 
 /*
@@ -62,6 +63,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('updatesubject/{id}', [SubjectsController::class, 'updateSubject']);
     Route::post('deletesubject/{id}', [SubjectsController::class, 'deleteSubject']);
     });
+
+//Manage Department
+
+Route::get('getdepartments', [DepartmentsController::class, 'getDepartments']);
+Route::post('adddepartment', [DepartmentsController::class, 'addDepartment']);
+Route::post('updatedepartment/{id}', [DepartmentsController::class, 'updateDepartment']);
+Route::post('deletedepartment/{id}', [DepartmentsController::class, 'deleteDepartment']);
 
 
 
