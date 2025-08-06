@@ -13,6 +13,7 @@ use App\Http\Controllers\AdmissionsController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\SubjectsController;
 use App\Http\Controllers\DepartmentsController;
+use App\Http\Controllers\ScheduleController;
 
 
 /*
@@ -105,6 +106,8 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 
 
+//Assign Schedule
+Route::post('/assign-schedule', [ScheduleController::class, 'assignSchedule']);
 
 
 

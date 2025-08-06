@@ -460,7 +460,7 @@ class AdmissionsController extends Controller
    public function acceptapplication(Request $request, $id)
 {
     try {
-         $user = Auth::user();
+        $user = Auth::user();
         if (!$user) {
             return response()->json([
                 'isSuccess' => false,
@@ -468,18 +468,24 @@ class AdmissionsController extends Controller
             ], 401);
         }
 
-        
         $admission = admissions::findOrFail($id);
+
+        // Check if already approved
+        if ($admission->status === 'approved') {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'This application has already been approved.',
+            ]);
+        }
 
         $admission->status = 'approved';
         $admission->save();
 
-        // Get applicant details (you can adjust if fields are named differently)
         $firstName = $admission->given_name ?? 'Applicant';
         $lastName = $admission->surname ?? '';
         $email = $admission->email;
 
-        // Send confirmation email
+        // Send confirmation email only if not previously approved
         if ($email) {
             Mail::html("
                 <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
@@ -510,6 +516,7 @@ class AdmissionsController extends Controller
         ]);
     }
 }
+
 
 
     public function sendExamination(Request $request, $id)
