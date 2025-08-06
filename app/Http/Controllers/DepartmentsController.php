@@ -32,7 +32,7 @@ class DepartmentsController extends Controller
         return response()->json([
             'isSuccess' => true,
             'message' => 'Department created successfully',
-            'data' => $department
+            'department' => $department
         ]);
     }
 
