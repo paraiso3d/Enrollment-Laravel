@@ -63,86 +63,81 @@ class AccountsController extends Controller
 
 
     public function createUser(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            // Personal Information
+            'surname' => 'nullable|string|max:50',
+            'given_name' => 'nullable|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'middle_initial' => 'nullable|string|max:5',
+            'user_type_id' => 'nullable|exists:user_types,id',
+            'suffix' => 'nullable|string|max:10',
+            'date_of_birth' => 'nullable|date',
+            'place_of_birth' => 'nullable|string|max:100',
+            'gender' => 'nullable|string|max:10',
+            'civil_status' => 'nullable|string|max:20',
 
+            // Address & Contact Info
+            'street_address' => 'nullable|string|max:255',
+            'province' => 'nullable|string|max:100',
+            'city' => 'nullable|string|max:100',
+            'barangay' => 'nullable|string|max:100',
+            'nationality' => 'nullable|string|max:50',
+            'religion' => 'nullable|string|max:50',
+            'ethnic_affiliation' => 'nullable|string|max:50',
+            'telephone_number' => 'nullable|string|max:15',
+            'mobile_number' => 'nullable|string|max:15',
 
-                //Personal Information
-                'surname' => 'nullable|string|max:50',
-                'given_name' => 'nullable|string|max:50',
-                'middle_name' => 'nullable|string|max:50',
-                'middle_initial' => 'nullable|string|max:5',
-                'user_type_id' => 'nullable|exists:user_types,id',
-                'suffix' => 'nullable|string|max:10',
-                'date_of_birth' => 'nullable|date',
-                'place_of_birth' => 'nullable|string|max:100',
-                'gender' => 'nullable|string|max:10',
-                'civil_status' => 'nullable|string|max:20',
+            // Account Info
+            'email' => 'nullable|email|max:100|unique:accounts,email',
+            'is_4ps_member' => 'nullable|string',
+            'is_insurance_member' => 'nullable|string',
+            'is_vaccinated' => 'nullable|string',
+            'is_indigenous' => 'nullable|string',
+        ]);
 
-                //  Dropdown inputs
-                'street_address' => 'nullable|string|max:255',
-                'province' => 'nullable|string|max:100',
-                'city' => 'nullable|string|max:100',
-                'barangay' => 'nullable|string|max:100',
-
-                'nationality' => 'nullable|string|max:50',
-                'religion' => 'nullable|string|max:50',
-                'ethnic_affiliation' => 'nullable|string|max:50',
-                'telephone_number' => 'nullable|string|max:15',
-                'mobile_number' => 'nullable|string|max:15',
-                'email' => 'nullable|email|max:100|unique:accounts,email',
-                'is_4ps_member' => 'nullable|string',
-                'is_insurance_member' => 'nullable|string',
-                'is_vaccinated' => 'nullable|string',
-                'is_indigenous' => 'nullable|string',
-               
-            ]);
-
-            if ($validator->fails()) {
-                throw new ValidationException($validator);
-            }
-
-            $validatedData = $validator->validated();
-            $plainPassword = Str::random(8);
-            $verificationCode = rand(100000, 999999);
-
-
-            $validatedData['password'] = Hash::make($plainPassword);
-            $validatedData['user_type_id'] = $validatedData['user_type_id'];
-            $validatedData['is_verified'] = 0;
-             $validatedData['is_admitted'] = 0;
-            $validatedData['verification_code'] = $verificationCode;
-
-
-            $account = accounts::create($validatedData);
-
-
-            Mail::raw("Welcome! Your password is: $plainPassword\nYour verification code is: $verificationCode", function ($message) use ($account) {
-                $message->to($account->email)
-                    ->subject('Your Account Details');
-            });
-
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'User created successfully.',
-                'accounts' => $account,
-            ], 201);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to create admission.',
-                'error' => $e->getMessage(),
-            ], 500);
+        if ($validator->fails()) {
+            throw new ValidationException($validator);
         }
+
+        $validatedData = $validator->validated();
+        $plainPassword = Str::random(8);
+        $verificationCode = rand(100000, 999999);
+
+        
+        $validatedData['password'] = Hash::make($plainPassword);
+        $validatedData['is_admitted'] = 0;
+
+        $account = accounts::create($validatedData);
+
+        if (!empty($account->email)) {
+            Mail::raw("Welcome! Your password is: $plainPassword\nYour email is code is: $account->email", function ($message) use ($account) {
+                $message->to($account->email)
+                        ->subject('Your Account Details');
+            });
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'User created successfully.',
+            'account' => $account,
+            'plain_password' => $plainPassword, // Optional
+        ], 201);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to create admission.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     public function createAdminAccount(Request $request)
     {
