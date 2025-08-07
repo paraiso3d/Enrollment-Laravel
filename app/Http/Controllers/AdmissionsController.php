@@ -519,7 +519,7 @@ class AdmissionsController extends Controller
 
 
 
-   public function sendExaminations(Request $request)
+   public function sendExamination(Request $request)
 {
     try {
         $request->validate([
@@ -533,13 +533,6 @@ class AdmissionsController extends Controller
         ]);
 
         $examDate = $request->input('exam_date');
-        $dayOfWeek = date('w', strtotime($examDate));
-        if (in_array($dayOfWeek, [0, 6])) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Exam date cannot be on a Saturday or Sunday.',
-            ]);
-        }
 
         $results = [];
         foreach ($request->applicant_ids as $id) {
