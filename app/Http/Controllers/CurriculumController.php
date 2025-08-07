@@ -15,7 +15,7 @@ class CurriculumController extends Controller
     return response()->json([
         'isSuccess' => true,
         'message' => 'Curriculums retrieved successfully.',
-        'data' => $curriculums,
+        'curriculum' => $curriculums,
     ]);
 }
 
