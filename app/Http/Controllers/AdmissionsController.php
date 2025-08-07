@@ -519,111 +519,95 @@ class AdmissionsController extends Controller
 
 
 
-    public function sendExamination(Request $request, $id)
-    {
-        try {
-           $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
+   public function sendExaminations(Request $request)
+{
+    try {
+        $request->validate([
+            'applicant_ids' => 'required|array',
+            'applicant_ids.*' => 'exists:admissions,id',
+            'exam_date' => 'required|date',
+            'exam_time_from' => 'required|date_format:H:i',
+            'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
+            'room_assignment' => 'required|string',
+            'building' => 'required|string',
+        ]);
 
-
-            // Generate test permit number if not exists
-            if (!$admission->test_permit_no) {
-                $prefix = "BULSU-";
-                $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
-                $admission->test_permit_no = $prefix . $paddedId;
-                $admission->save();
-            }
-
-            // Validate required inputs
-            $request->validate([
-                'exam_date' => 'required|date',
-                'exam_time_from' => 'required|date_format:H:i',
-                'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
-                'room_assignment' => 'required|string',
-                'building' => 'required|string',
-            ]);
-
-            $examDate = $request->input('exam_date');
-
-            // Reject Saturday (6) and Sunday (0)
-            $dayOfWeek = date('w', strtotime($examDate));
-            if (in_array($dayOfWeek, [0, 6])) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Exam date cannot be on a Saturday or Sunday.',
-                ]);
-            }
-
-            // Save to exam_schedules
-            $examSchedule = exam_schedules::create([
-                'applicant_id' => $admission->id,
-                'test_permit_no' => $admission->test_permit_no,
-                'room_assignment' => $request->room_assignment,
-                'building' => $request->building,
-                'exam_time_from' => $request->exam_time_from,
-                'exam_time_to' => $request->exam_time_to,
-                'exam_date' => $examDate,
-                'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
-               'academic_year' => $admission->school_years->school_year
-            ]);
-
-            // Format details for email
-            $examDateFormatted = date('F d, Y', strtotime($examDate));
-            $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
-            $email = $admission->email;
-            $firstName = $admission->given_name ?? 'Applicant';
-            $lastName = $admission->surname ?? '';
-            $programName = $admission->academic_program->name ?? 'Your selected course';
-            $schoolYear = $request->academic_year ?? '2024–2025';
-            $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
-
-            // Send email
-            if ($email) {
-                Mail::html("
-                    <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
-                        <h2>SNL University Online Exam Schedule</h2>
-                        <p>Good day!</p>
-                        <p>
-                            Dear Mr./Ms. {$lastName}, {$firstName},<br>
-                            Course: {$programName} at SNL – {$testingCenter}
-                        </p>
-                        <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
-                        <p>
-                            <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
-                            <strong>Room Assignment:</strong> {$request->room}<br>
-                            <strong>Building:</strong> {$request->building}<br>
-                            <strong>Time:</strong> {$timeFormatted}<br>
-                            <strong>Testing Center:</strong> SNL – {$testingCenter}
-                        </p>
-                        <p style='font-style: italic; color: #555;'>*ATSNL will utilize all campuses of the University as Testing Centers. Your testing center assignment is computer-generated, be sure to double check your Testing Center to avoid confusion.</p>
-                        <p><strong>Important Reminders:</strong></p>
-                        <ul>
-                            <li>PRINT your TEST PERMIT and QR Code on a short bond paper.</li>
-                            <li>BRING a VALID ID (with picture) during the exam. If you do not have a valid ID, bring your PSA birth certificate and certificate of enrollment.</li>
-                            <li>Give yourself extra time. Arriving early will help you locate the exam room and settle in.</li>
-                            <li>Only applicants are allowed to enter. Parents/guardians/chaperones are not permitted.</li>
-                            <li>Minimum health protocols will be observed. Face masks are required.</li>
-                            <li>READ the General Guidelines of ATSNL {$schoolYear}. <a href='#'>Click here</a>.</li>
-                            <li>To print your TEST PERMIT <a href='#'>click here</a>.</li>
-                        </ul>
-                        <p>*Follow and regularly check the BulSU Admissions and Orientation Services Facebook Page for announcements. For inquiries, call 919-7800 local 1087 or email <a href='mailto:admissions@bulsu.edu.ph'>admissions@bulsu.edu.ph</a>.</p>
-                    </div>
-                ", function ($message) use ($email) {
-                    $message->to($email)->subject('SNL Exam Schedule Notification');
-                });
-            }
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Examination schedule saved and sent via email.',
-            ]);
-        } catch (\Exception $e) {
+        $examDate = $request->input('exam_date');
+        $dayOfWeek = date('w', strtotime($examDate));
+        if (in_array($dayOfWeek, [0, 6])) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to send examination email.',
-                'error' => $e->getMessage(),
+                'message' => 'Exam date cannot be on a Saturday or Sunday.',
             ]);
         }
+
+        $results = [];
+        foreach ($request->applicant_ids as $id) {
+            try {
+                $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
+
+                if (!$admission->test_permit_no) {
+                    $prefix = "BULSU-";
+                    $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
+                    $admission->test_permit_no = $prefix . $paddedId;
+                    $admission->save();
+                }
+
+                exam_schedules::updateOrCreate(
+                    ['applicant_id' => $admission->id],
+                    [
+                        'test_permit_no' => $admission->test_permit_no,
+                        'room_assignment' => $request->room_assignment,
+                        'building' => $request->building,
+                        'exam_time_from' => $request->exam_time_from,
+                        'exam_time_to' => $request->exam_time_to,
+                        'exam_date' => $examDate,
+                        'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
+                        'academic_year' => $admission->school_years->school_year
+                    ]
+                );
+
+                $email = $admission->email;
+                if ($email) {
+                    $examDateFormatted = date('F d, Y', strtotime($examDate));
+                    $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
+                    $firstName = $admission->given_name ?? 'Applicant';
+                    $lastName = $admission->surname ?? '';
+                    $programName = $admission->academic_program->name ?? 'Your selected course';
+                    $schoolYear = $admission->school_years->school_year ?? '2024–2025';
+                    $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
+
+                    Mail::html("... email content here ...", function ($message) use ($email) {
+                        $message->to($email)->subject('SNL Exam Schedule Notification');
+                    });
+                }
+
+                $results[] = [
+                    'applicant_id' => $id,
+                    'status' => 'sent',
+                ];
+            } catch (\Exception $ex) {
+                $results[] = [
+                    'applicant_id' => $id,
+                    'status' => 'error',
+                    'message' => $ex->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Bulk exam scheduling completed.',
+            'results' => $results,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to send exam schedules.',
+            'error' => $e->getMessage(),
+        ]);
     }
+}
 
  public function reserveSlot(Request $request, $id)
 {

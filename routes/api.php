@@ -14,6 +14,7 @@ use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\SubjectsController;
 use App\Http\Controllers\DepartmentsController;
 use App\Http\Controllers\ScheduleController;
+use App\Http\Controllers\CurriculumController;
 
 
 /*
@@ -52,6 +53,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('getcourses', [CoursesController::class, 'getCourses']);
     Route::post('addcourse', [CoursesController::class, 'addCourse']);
+    Route::post('deletecourse/{id}', [SchoolCampusController::class, 'deleteCourse']);
     Route::get('/courses/{id}/subjects', [CoursesController::class, 'getCourseSubjects']);
 
 });
@@ -120,6 +122,7 @@ Route::get('getcampuses', [SchoolCampusController::class, 'getCampuses']);
 Route::middleware('auth:sanctum')->group(function (){ 
 Route::post('addcampus', [SchoolCampusController::class, 'addCampus']);
 Route::post('updatecampus/{id}', [SchoolCampusController::class, 'updateCampus']);
+Route::post('deletecampus/{id}', [SchoolCampusController::class, 'deleteCampus']);
  });
 
 
@@ -150,22 +153,28 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('getcourses', [CoursesController::class, 'getCourses']);
     Route::post('updatecourse/{id}', [CoursesController::class, 'updateCourse']);
     Route::post('deletecourse/{id}', [CoursesController::class, 'deleteCourse']);
+    Route::get('courses/{id}/subjects', [CoursesController::class, 'getCourseSubjects']);
+    Route::get('courses/{id}/curriculums', [CoursesController::class, 'getCourseCurriculums']);
+
     Route::post('restorecourse/{id}', [CoursesController::class, 'restoreCourse']);
 });
 
-// // Enrollments Management
-// Route::middleware('auth:sanctum')->group(function () {
-//     Route::get('getenrollments', [EnrollmentsController::class, 'getEnrollments']);
-// });
+//CURRICULUM
+
+Route::get('getcurriculums', [CurriculumController::class, 'getCurriculums']);
+Route::get('getcurriculums/{id}', [CurriculumController::class, 'showcurriculums']);
+Route::post('createcurriculums', [CurriculumController::class, 'storecurriculum']);
+Route::post('updatecurriculums/{id}', [CurriculumController::class, 'updatecurriculum']);
+Route::post('deletecurriculums/{id}', [CurriculumController::class, 'delete']);
 
 
 // // School Years Management
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('addschoolyear', [SchoolYearsController::class, 'createSchoolYear']);
     Route::get('getschoolyears', [SchoolYearsController::class, 'getSchoolYears']);
-//     Route::post('updateschoolyear/{id}', [SchoolYearsController::class, 'updateSchoolYear']);
-//     Route::post('deleteschoolyear/{id}', [SchoolYearsController::class, 'deleteSchoolYear']);
-//     Route::post('restoreschoolyear/{id}', [SchoolYearsController::class, 'restoreSchoolYear']);
+    Route::post('deleteschoolyear', [SchoolYearsController::class, 'deleteSchoolYear']);
+    Route::post('updateschoolyear/{id}', [SchoolYearsController::class, 'updateSchoolYear']);
+
 });
 
 // // Sections Management

@@ -17,24 +17,25 @@ class SubjectsController extends Controller
     {
         try {
             // Retrieve all non-archived subjects with their associated course
-            $subjects = subjects::with('course')
-                ->where('is_archived', 0)
-                ->get()
-                ->map(function ($subject) {
-                    return [
-                        'id' => $subject->id,
-                        'subject_code' => $subject->subject_code,
-                        'subject_name' => $subject->subject_name,
-                        'units' => $subject->units,
-                        'course' => [
-                            'id' => $subject->course->id,
-                            'course_name' => $subject->course->course_name,
-                            'course_type' => $subject->course->course_type,
-                            'course_code' => $subject->course->course_code,
-                            'course_description' => $subject->course->course_description,
-                        ]
-                    ];
-                });
+            $subjects = subjects::with(['course', 'curriculum']) // ✅
+            ->where('is_archived', 0)
+            ->get()
+            ->map(function ($subject) {
+        return [
+            'id' => $subject->id,
+            'subject_code' => $subject->subject_code,
+            'subject_name' => $subject->subject_name,
+            'units' => $subject->units,
+            'course' => [
+                'id' => $subject->course->id,
+                'course_name' => $subject->course->course_name,
+            ],
+            'curriculum' => [
+                'id' => $subject->curriculum->id,
+                'curriculum_name' => $subject->curriculum->curriculum_name,
+            ]
+        ];
+    });
 
             return response()->json([
                 'isSuccess' => true,
@@ -65,28 +66,27 @@ class SubjectsController extends Controller
 
 
             // ✅ Validate input
-            $validated = $request->validate([
-                'course_id' => 'required|exists:courses,id',
-                'subject_code' => 'required|string|max:10',
-                'subject_name' => 'required|string|max:100',
-                'units' => 'required|integer|min:1',
+                $validated = $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'curriculum_id' => 'required|exists:curriculums,id', // ✅
+            'subject_code' => 'required|string|max:10',
+            'subject_name' => 'required|string|max:100',
+            'units' => 'required|integer|min:1',
+        ]);
 
-            ]);
+        $duplicate = subjects::where('course_id', $validated['course_id'])
+            ->where('curriculum_id', $validated['curriculum_id']) // ✅
+            ->where('subject_name', $validated['subject_name'])
+            ->first();
 
-            // 🔁 Check for duplicate subject name in the same course
-            $duplicate = subjects::where('course_id', $validated['course_id'])
-                ->where('subject_name', $validated['subject_name'])
-                ->first();
+        if ($duplicate) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Subject with the same name already exists in this curriculum.',
+            ], 409);
+        }
 
-            if ($duplicate) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Subject with the same name already exists in this course.',
-                ], 409);
-            }
-
-
-            $subject = subjects::create($validated);
+        $subject = subjects::create($validated);
 
             return response()->json([
                 'isSuccess' => true,
@@ -117,19 +117,20 @@ class SubjectsController extends Controller
 
             $subject = subjects::findOrFail($id);
 
-            $validated = $request->validate([
-                'course_id' => 'required|exists:courses,id',
-                'subject_code' => 'required|string|max:10',
-                'subject_name' => 'required|string|max:100',
-                'units' => 'required|integer|min:1',
-            ]);
+                $validated = $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'curriculum_id' => 'required|exists:curriculums,id', // ✅
+            'subject_code' => 'required|string|max:10',
+            'subject_name' => 'required|string|max:100',
+            'units' => 'required|integer|min:1',
+        ]);
 
-            // Check for duplicate subject name in the same course
-            $duplicate = subjects::where('course_id', $validated['course_id'])
-                ->where('subject_name', $validated['subject_name'])
-                ->where('id', '<>', $id)
-                ->first();
-
+        $duplicate = subjects::where('course_id', $validated['course_id'])
+            ->where('curriculum_id', $validated['curriculum_id']) // ✅
+            ->where('subject_name', $validated['subject_name'])
+            ->where('id', '<>', $id)
+            ->first();
+            
             if ($duplicate) {
                 return response()->json([
                     'isSuccess' => false,

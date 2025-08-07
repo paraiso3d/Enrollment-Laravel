@@ -11,6 +11,7 @@ class subjects extends Model
     protected $table = 'subjects';
        protected $fillable = [
         'course_id',
+        'curriculum_id',
         'subject_code',
         'subject_name',
         'units',
@@ -25,5 +26,11 @@ public function students()
     {
         return $this->belongsToMany(students::class, 'student_subject', 'subject_id', 'student_id');
     }
+
+    public function curriculum()
+{
+    return $this->belongsTo(curriculums::class);
+}
+
 
 }

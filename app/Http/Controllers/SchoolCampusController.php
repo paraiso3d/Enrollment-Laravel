@@ -126,4 +126,35 @@ class SchoolCampusController extends Controller
         }
     }
 
+   public function deleteCampus($id)
+{
+    try {
+        // Check if user is authenticated
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        // Find campus by ID
+        $campus = school_campus::findOrFail($id);
+
+        // Soft delete (archive) the campus
+        $campus->is_archived = 1;
+        $campus->save();
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Campus archived successfully.',
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to archive campus.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
 }

@@ -86,6 +86,11 @@ class CoursesController extends Controller
         }
     }
 
+
+
+
+    
+
     public function updateCourse(Request $request, $id)
     {
         try {
@@ -192,13 +197,25 @@ class CoursesController extends Controller
                 'message' => 'Unauthorized.',
             ], 401);
         }
-        $course = courses::with('subjects')->findOrFail($id);
+
+        // Load course with curriculums and their subjects
+        $course = courses::with(['curriculums.subjects'])->findOrFail($id);
+
+        $curriculumSubjects = [];
+
+        foreach ($course->curriculums as $curriculum) {
+            $curriculumSubjects[] = [
+                'curriculum_name' => $curriculum->curriculum_name,
+                'curriculum_description' => $curriculum->curriculum_description,
+                'subjects' => $curriculum->subjects
+            ];
+        }
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Subjects retrieved successfully.',
+            'message' => 'Subjects grouped by curriculum retrieved successfully.',
             'course_name' => $course->course_name,
-            'subjects' => $course->subjects
+            'curriculums' => $curriculumSubjects
         ], 200);
 
     } catch (\Throwable $e) {
@@ -209,6 +226,37 @@ class CoursesController extends Controller
         ], 500);
     }
 }
+
+public function getCourseCurriculums($id)
+{
+    try {
+        $user = Auth::user();
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthorized.',
+            ], 401);
+        }
+
+        $course = courses::with('curriculums')->findOrFail($id);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Curriculums retrieved successfully.',
+            'course_name' => $course->course_name,
+            'curriculums' => $course->curriculums
+        ], 200);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve curriculums.',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+
 
 
 }
