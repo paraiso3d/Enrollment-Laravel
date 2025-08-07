@@ -88,7 +88,7 @@ Route::get('getusers', [AccountsController::class, 'getUsers']);
 Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
 Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
 Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])->middleware('auth:sanctum');
-Route::post('sendexamination/{id}', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
+Route::post('sendexamination', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
 Route::post('/reserve-slot/{id}', [AdmissionsController::class, 'reserveSlot']);
 
 Route::middleware('auth:sanctum')->group(function () {
