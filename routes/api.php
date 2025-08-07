@@ -102,9 +102,8 @@ Route::middleware('auth:sanctum')->group(function () {
 //     Route::get('listenrollments', [EnrollmentsController::class, 'listEnrollments']);
     Route::post('enrollstudent/{id}', [EnrollmentsController::class, 'enrollStudent']);
      Route::post('enrollnow', [EnrollmentsController::class, 'enrollNow']);
-//     Route::post('updateenrollment/{id}', [EnrollmentsController::class, 'updateEnrollment']);
-//     Route::post('deleteenrollment/{id}', [EnrollmentsController::class, 'deleteEnrollment']);
-//     Route::post('restoreenrollment/{id}', [EnrollmentsController::class, 'restoreEnrollment']);
+     Route::get('getcurriculumsubject', [EnrollmentsController::class, 'getCurriculumSubjects']);
+
 });
 
 
@@ -165,6 +164,7 @@ Route::get('getcurriculums', [CurriculumController::class, 'getCurriculums']);
 Route::get('getcurriculums/{id}', [CurriculumController::class, 'showcurriculums']);
 Route::post('createcurriculums', [CurriculumController::class, 'storecurriculum']);
 Route::post('updatecurriculums/{id}', [CurriculumController::class, 'updatecurriculum']);
+
 Route::post('deletecurriculums/{id}', [CurriculumController::class, 'delete']);
 
 

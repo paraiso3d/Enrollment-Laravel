@@ -8,6 +8,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\validation\Rule;
 use App\Models\admissions;
 use App\Models\sections;
+use App\Models\curriculums;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Model;
@@ -68,46 +69,46 @@ class EnrollmentsController extends Controller
 
 
     public function enrollStudent(Request $request)
-{
-    try {
-        $validated = $request->validate([
-            'admission_id' => 'required|integer|exists:admissions,id',
-        ]);
+    {
+        try {
+            $validated = $request->validate([
+                'admission_id' => 'required|integer|exists:admissions,id',
+            ]);
 
-        $admission = admissions::find($validated['admission_id']);
+            $admission = admissions::find($validated['admission_id']);
 
-        // ✅ Check if already enrolled
-        $existingStudent = students::where('admission_id', $admission->id)->first();
-        if ($existingStudent) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'This admission is already enrolled.',
-            ], 400);
-        }
+            // ✅ Check if already enrolled
+            $existingStudent = students::where('admission_id', $admission->id)->first();
+            if ($existingStudent) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'This admission is already enrolled.',
+                ], 400);
+            }
 
-        // ✅ Generate student number like: SNL-202508061001
-        $date = now()->format('Ymd');
-        $lastStudent = students::latest('id')->first();
-        $nextId = $lastStudent ? $lastStudent->id + 1 : 1;
-        $studentNumber = 'SNL-' . $date . str_pad($nextId, 4, '0', STR_PAD_LEFT);
+            // ✅ Generate student number like: SNL-202508061001
+            $date = now()->format('Ymd');
+            $lastStudent = students::latest('id')->first();
+            $nextId = $lastStudent ? $lastStudent->id + 1 : 1;
+            $studentNumber = 'SNL-' . $date . str_pad($nextId, 4, '0', STR_PAD_LEFT);
 
-        // ✅ Generate random 8-character password
-        $rawPassword = Str::random(8);
-        $hashedPassword = Hash::make($rawPassword);
+            // ✅ Generate random 8-character password
+            $rawPassword = Str::random(8);
+            $hashedPassword = Hash::make($rawPassword);
 
-        // ✅ Create student record
-        $student = new students();
-        $student->admission_id = $admission->id;
-        $student->student_number = $studentNumber;
-        $student->password = $hashedPassword;
-        $student->profile_img = null;
-        $student->student_status = 0;
-        $student->section_id = null; // Set your default section
-        $student->is_active = 1;
-        $student->save();
+            // ✅ Create student record
+            $student = new students();
+            $student->admission_id = $admission->id;
+            $student->student_number = $studentNumber;
+            $student->password = $hashedPassword;
+            $student->profile_img = null;
+            $student->student_status = 0;
+            $student->section_id = null; // Set your default section
+            $student->is_active = 1;
+            $student->save();
 
-        // ✅ Send email using HTML (no Blade)
-        $html = '
+            // ✅ Send email using HTML (no Blade)
+            $html = '
             <html>
             <body style="font-family: Arial, sans-serif;">
                 <div style="border:1px solid #ccc; padding:20px; max-width:600px; margin:auto;">
@@ -126,148 +127,160 @@ class EnrollmentsController extends Controller
             </html>
         ';
 
-        Mail::send([], [], function ($message) use ($admission, $html) {
-            $message->to($admission->email)
-                ->subject('Your Enrollment Credentials')
-                ->setBody($html, 'text/html');
-        });
+            Mail::send([], [], function ($message) use ($admission, $html) {
+                $message->to($admission->email)
+                    ->subject('Your Enrollment Credentials')
+                    ->setBody($html, 'text/html');
+            });
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Student enrolled successfully and credentials sent to email.',
-            'student_number' => $studentNumber,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Error: ' . $e->getMessage(),
-        ], 500);
-    }
-}
-
-
-public function enrollNow(Request $request)
-{
-    try {
-        $student = auth()->user();  // already authenticated student
-
-        if (!$student) {
-            Log::warning('Unauthenticated access attempt.');
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Student enrolled successfully and credentials sent to email.',
+                'student_number' => $studentNumber,
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Unauthenticated user.'
-            ], 401);
+                'message' => 'Error: ' . $e->getMessage(),
+            ], 500);
         }
+    }
 
-        Log::info('Authenticated student:', ['student_id' => $student->id]);
 
-        // Eager load the admission relationship
-        $student->load('admission');
+    public function enrollNow(Request $request)
+    {
+        try {
+            $student = auth()->user();
 
-        if (!$student->admission) {
-            Log::error('Admission not found for student ID: ' . $student->id);
+            if (!$student) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Unauthenticated user.'
+                ], 401);
+            }
+
+            $student->load('admission');
+
+            if (!$student->admission) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Student admission not found.'
+                ], 404);
+            }
+
+            $validated = $request->validate([
+                'subject_ids' => 'nullable|array',
+                'subject_ids.*' => 'exists:subjects,id',
+            ]);
+
+            $courseId = $student->admission->academic_program_id;
+            $schoolYearId = $student->admission->school_year_id;
+
+            // 🔍 Get curriculum for the student's course
+            $curriculum = curriculums::where('course_id', $courseId)->first();
+
+            if (!$curriculum) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Curriculum not found for this course.'
+                ], 404);
+            }
+
+            // 🔄 Auto-enroll in subjects from curriculum
+            $curriculumSubjectIds = $curriculum->subjects->pluck('id');
+
+            // If no subjects in curriculum and manual ones are provided
+            if ($curriculumSubjectIds->isEmpty() && !empty($validated['subject_ids'])) {
+                $enrolledSubjectIds = collect($validated['subject_ids']);
+            } elseif ($curriculumSubjectIds->isNotEmpty()) {
+                $enrolledSubjectIds = $curriculumSubjectIds;
+            } else {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'No subjects found in curriculum and none provided manually.'
+                ], 404);
+            }
+
+            // 🔄 Assign section
+          $section = sections::where('course_id', $courseId)
+            ->withCount('students')
+            ->get()
+            ->firstWhere(function ($section) {
+                return $section->students_count < $section->max_students;
+            });
+
+
+            if (!$section) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'No section available for this course.'
+                ], 404);
+            }
+
+            $student->section_id = $section->id;
+            $student->student_status = 1;
+            $student->save();
+
+            // 🔗 Sync subjects
+            $student->subjects()->sync($enrolledSubjectIds);
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Student enrolled and subjects assigned successfully.',
+                'enrolled' => [
+                    'student_number' => $student->student_number,
+                    'section' => $section->section_name,
+                    'subjects' => subjects::whereIn('id', $enrolledSubjectIds)->get(['id', 'subject_code', 'subject_name']),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Enrollment failed.',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+
+
+    public function getCurriculumSubjects(Request $request)
+    {
+        $student = auth()->user();
+
+        if (!$student || !$student->admission) {
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Student admission not found.'
             ], 404);
         }
 
-        $validated = $request->validate([
-            'subject_ids' => 'nullable|array',
-            'subject_ids.*' => 'exists:subjects,id',
-        ]);
+        $courseId = $student->admission->academic_program_id;
 
-        // Use academic_program_id instead of course_id
-        $courseId = $student->admission->academic_program_id ?? null;
-        $schoolYearId = $student->admission->school_year_id ?? null;
+        $curriculum = curriculums::where('course_id', $courseId)->first();
 
-        Log::info('Course and School Year from admission:', [
-            'academic_program_id' => $courseId,
-            'school_year_id' => $schoolYearId
-        ]);
-
-        if (!$courseId) {
-            Log::error('Missing academic_program_id in student admission.');
+        if (!$curriculum) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Course not found in admission.'
+                'message' => 'Curriculum not found for this course.'
             ], 404);
         }
 
-        $section = sections::where('course_id', $courseId)->first();
-        Log::info('Section fetched:', ['section' => $section]);
-
-        if (!$section) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'No available section found for the student’s course.'
-            ], 404);
-        }
-
-        $student->section_id = $section->id;
-        $student->student_status = 1;
-        $student->save();
-
-        $enrolledSubjectIds = collect();
-
-        // Fetch subjects for course and school year
-        $autoSubjects = subjects::where('course_id', $courseId)
-            ->when($schoolYearId, function ($query) use ($schoolYearId) {
-                return $query->where('school_year_id', $schoolYearId);
-            })
-            ->pluck('id');
-
-        Log::info('Auto subjects fetched:', ['auto_subject_ids' => $autoSubjects]);
-
-        if ($autoSubjects->isNotEmpty()) {
-            $enrolledSubjectIds = $autoSubjects;
-        } elseif (!empty($validated['subject_ids'])) {
-            $enrolledSubjectIds = collect($validated['subject_ids']);
-        } else {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'No subjects found for course and year, and no manual subjects provided.'
-            ], 404);
-        }
-
-        $student->subjects()->sync($enrolledSubjectIds);
+        // 🔄 Get related subjects via pivot
+        $subjects = $curriculum->subjects()->get(['subjects.id', 'subject_code', 'subject_name', 'units']);
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Student enrolled and subjects assigned successfully.',
-            'enrolled' => [
-                'student_number' => $student->student_number,
-                'section' => $section->section_name ?? null,
-                'subjects' => subjects::whereIn('id', $enrolledSubjectIds)->get([
-                    'id', 'subject_code', 'subject_name'
-                ]),
-            ]
+            'curriculum_id' => $curriculum->id,
+            'subjects' => $subjects
         ]);
-    } catch (\Exception $e) {
-        Log::error('Enrollment error:', ['exception' => $e->getMessage()]);
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Enrollment failed.',
-            'error' => $e->getMessage()
-        ], 500);
     }
-}
-
-
-
-
-
-
-
-
-
-
 
 
     //This function handles the creation of a new enrollment.
     public function storeEnrollment(Request $request)
     {
-        
+
         try {
             $user = auth()->user();
 
@@ -374,26 +387,25 @@ public function enrollNow(Request $request)
 
     //HELPERS
     public function getAvailableSubjects()
-{
-    $student = auth()->user()->student;
+    {
+        $student = auth()->user()->student;
 
-    if (!$student || !$student->admission) {
-        return response()->json(['message' => 'Student not found or not admitted.'], 404);
+        if (!$student || !$student->admission) {
+            return response()->json(['message' => 'Student not found or not admitted.'], 404);
+        }
+
+        $courseId = $student->admission->course_id;
+        $schoolYearId = $student->admission->school_year_id;
+        $semester = $student->admission->semester;
+
+        $subjects = subjects::where('course_id', $courseId)
+            ->where('school_year_id', $schoolYearId)
+            ->where('semester', $semester)
+            ->get();
+
+        return response()->json([
+            'isSuccess' => true,
+            'data' => $subjects
+        ]);
     }
-
-    $courseId = $student->admission->course_id;
-    $schoolYearId = $student->admission->school_year_id;
-    $semester = $student->admission->semester;
-
-    $subjects = subjects::where('course_id', $courseId)
-        ->where('school_year_id', $schoolYearId)
-        ->where('semester', $semester)
-        ->get();
-
-    return response()->json([
-        'isSuccess' => true,
-        'data' => $subjects
-    ]);
-}
-
 }
