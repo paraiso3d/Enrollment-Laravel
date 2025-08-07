@@ -563,8 +563,8 @@ class AdmissionsController extends Controller
                           $examDateFormatted = date('F d, Y', strtotime($examDate));
             $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
             $email = $admission->email;
-            $firstName = $admission->given_name ?? 'Applicant';
-            $lastName = $admission->surname ?? '';
+            $firstName = $admission->first_name ?? 'Applicant';
+            $lastName = $admission->last_name ?? '';
             $programName = $admission->academic_program->name ?? 'Your selected course';
             $schoolYear = $request->academic_year ?? '2024–2025';
             $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
@@ -582,7 +582,7 @@ class AdmissionsController extends Controller
                         <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
                         <p>
                             <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
-                            <strong>Room Assignment:</strong> {$request->room}<br>
+                            <strong>Room Assignment:</strong> {$request->room_assignment}<br>
                             <strong>Building:</strong> {$request->building}<br>
                             <strong>Time:</strong> {$timeFormatted}<br>
                             <strong>Testing Center:</strong> SNL – {$testingCenter}
