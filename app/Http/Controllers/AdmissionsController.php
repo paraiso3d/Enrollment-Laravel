@@ -101,7 +101,6 @@ class AdmissionsController extends Controller
                 'test_permit_no' => $admission->test_permit_no,
                 'applicant_number' => $admission->applicant_number,
                 'status' => $admission->status,
-                'status_by' => $admission->status_by,
                 'first_name' => $admission->first_name,
                 'middle_name' => $admission->middle_name,
                 'last_name' => $admission->last_name,
@@ -142,18 +141,11 @@ class AdmissionsController extends Controller
                 'father_name' => $admission->father_name,
                 'father_contact' => $admission->father_contact,
                 'blood_type' => $admission->blood_type,
-                'is_admitted' => $admission->is_admitted,
-                'is_archived' => $admission->is_archived,
-                'created_at' => $admission->created_at,
-                'updated_at' => $admission->updated_at,
 
                 // Related Names
-                'academic_program_id' => $admission->academic_program_id,
-                'academic_program' => optional($admission->academic_program)->program_name,
-                'school_campus_id' => $admission->school_campus_id,
+                'academic_program' => optional($admission->academic_program)->course_name,
                 'school_campus' => optional($admission->schoolCampus)->campus_name,
-                'academic_year_id' => $admission->academic_year_id,
-                'academic_year' => optional($admission->school_years)->academic_year,
+                'academic_year' => optional($admission->school_years)->school_year,
             ];
         });
 

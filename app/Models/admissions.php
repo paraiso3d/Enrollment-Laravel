@@ -97,8 +97,11 @@ class Admissions extends Model
     {
         return $this->belongsTo(courses::class, 'academic_program_id');
     }
-public function student()
-{
-    return $this->hasOne(students::class, 'admission_id');
-}
+    
+    public function student()
+    {
+        return $this->hasOne(students::class, 'admission_id');
+    }
+
+
 }
