@@ -167,61 +167,64 @@ class EnrollmentsController extends Controller
 
 
     public function enrollNow(Request $request)
-    {
-        try {
-            $student = auth()->user();
+{
+    try {
+        // 🔐 Authenticated student
+        $student = auth()->user();
 
-            if (!$student) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Unauthenticated user.'
-                ], 401);
-            }
+        if (!$student) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Unauthenticated user.'
+            ], 401);
+        }
 
-            $student->load('admission');
+        // 🔗 Load student admission record
+        $student->load('admission');
 
-            if (!$student->admission) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Student admission not found.'
-                ], 404);
-            }
+        if (!$student->admission) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Student admission not found.'
+            ], 404);
+        }
 
-            $validated = $request->validate([
-                'subject_ids' => 'nullable|array',
-                'subject_ids.*' => 'exists:subjects,id',
-            ]);
+        // ✅ Validate incoming subject_ids (optional)
+        $validated = $request->validate([
+            'subject_ids' => 'nullable|array',
+            'subject_ids.*' => 'exists:subjects,id',
+        ]);
 
-            $courseId = $student->admission->academic_program_id;
-            $schoolYearId = $student->admission->school_year_id;
+        $courseId = $student->admission->academic_program_id;
+        $schoolYearId = $student->admission->school_year_id;
 
-            // 🔍 Get curriculum for the student's course
-            $curriculum = curriculums::where('course_id', $courseId)->first();
+        // 📚 Get curriculum by course
+        $curriculum = curriculums::where('course_id', $courseId)->first();
 
-            if (!$curriculum) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Curriculum not found for this course.'
-                ], 404);
-            }
+        if (!$curriculum) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Curriculum not found for this course.'
+            ], 404);
+        }
 
-            // 🔄 Auto-enroll in subjects from curriculum
-            $curriculumSubjectIds = $curriculum->subjects->pluck('id');
+        // 🧠 Get subject IDs from curriculum
+        $curriculumSubjectIds = $curriculum->subjects->pluck('id');
 
-            if (!empty($validated['subject_ids'])) {
-                $enrolledSubjectIds = collect($validated['subject_ids']);
-            } elseif ($curriculumSubjectIds->isNotEmpty()) {
-                $enrolledSubjectIds = $curriculumSubjectIds;
-            } else {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'No subjects found in curriculum and none provided manually.'
-                ], 404);
-            }
+        // 🎯 Decide what subjects to enroll in
+        if (!empty($validated['subject_ids'])) {
+            $enrolledSubjectIds = collect($validated['subject_ids']);
+        } elseif ($curriculumSubjectIds->isNotEmpty()) {
+            $enrolledSubjectIds = $curriculumSubjectIds;
+        } else {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'No subjects found in curriculum and none provided manually.'
+            ], 404);
+        }
 
-
-            // 🔄 Assign section
-          $section = sections::where('course_id', $courseId)
+        // 🧩 Find an available section (based on capacity)
+        $section = sections::where('course_id', $courseId)
             ->withCount('students')
             ->get()
             ->filter(function ($section) {
@@ -229,45 +232,42 @@ class EnrollmentsController extends Controller
             })
             ->first();
 
-
-
-            if (!$section) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'No section available for this course.'
-                ], 404);
-            }
-
-            $student->section_id = $section->id;
-            $student->student_status = 1;
-            $student->save();
-
-            // 🔗 Sync subjects
-            $student->subjects()->sync($enrolledSubjectIds);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Student enrolled and subjects assigned successfully.',
-                'enrolled' => [
-                    'student_number' => $student->student_number,
-                    'section' => $section->section_name,
-                    'subjects' => subjects::whereIn('id', $enrolledSubjectIds)->get(['id', 'subject_code', 'subject_name']),
-                ]
-            ]);
-        } catch (\Exception $e) {
+        if (!$section) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Enrollment failed.',
-                'error' => $e->getMessage()
-            ], 500);
+                'message' => 'No section available for this course.'
+            ], 404);
         }
+
+        // 🔐 Assign section and update student status
+        $student->section_id = $section->id;
+        $student->student_status = 1; // Assume 1 = Enrolled
+        $student->save();
+
+        // 🔗 Sync subjects
+        $student->subjects()->sync($enrolledSubjectIds);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Student enrolled and subjects assigned successfully.',
+            'enrolled' => [
+                'student_number' => $student->student_number,
+                'section' => $section->section_name,
+                'subjects' => subjects::whereIn('id', $enrolledSubjectIds)
+                    ->get(['id', 'subject_code', 'subject_name']),
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Enrollment failed.',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
 
     
-
-    
-
-
 
     public function getCurriculumSubjects(Request $request)
     {
