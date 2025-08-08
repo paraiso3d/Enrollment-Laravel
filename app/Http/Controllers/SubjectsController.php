@@ -41,85 +41,83 @@ class SubjectsController extends Controller
     }
 
 
-    public function addSubject(Request $request)
+   public function addCurriculum(Request $request)
 {
     try {
-        $user = auth()->user();
-        $user->load('userType');
-
-        if (!$user || $user->userType?->role_name !== 'admin') {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Unauthorized access.',
-            ], 403);
-        }
-
-        // ✅ Validate only standalone subject fields
-        $validated = $request->validate([
-            'subject_code' => 'required|string|max:10|unique:subjects,subject_code',
-            'subject_name' => 'required|string|max:100|unique:subjects,subject_name',
-            'units' => 'required|integer|min:1',
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'curriculum_name' => 'required|string|max:255',
+            'year_started' => 'required|integer',
         ]);
 
-        $subject = subjects::create($validated);
+        $curriculum = curriculum::create([
+            'course_id' => $request->course_id,
+            'curriculum_name' => $request->curriculum_name,
+            'year_started' => $request->year_started,
+        ]);
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Subject added successfully.',
-            'subject' => $subject,
-        ], 201);
-    } catch (\Throwable $e) {
+            'message' => 'Curriculum added successfully.',
+            'curriculum' => [
+                'id' => $curriculum->id,
+                'course_id' => $curriculum->course_id,
+                'curriculum_name' => $curriculum->curriculum_name,
+                'year_started' => $curriculum->year_started,
+            ]
+        ]);
+    } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Failed to add subject.',
-            'error' => $e->getMessage(),
-        ], 500);
+            'message' => 'Failed to add curriculum.',
+            'error' => $e->getMessage()
+        ]);
     }
 }
 
-   public function updateSubject(Request $request, $id)
+   public function updateCurriculum(Request $request, $id)
 {
     try {
-        $user = auth()->user();
-        $user->load('userType');
-
-        if (!$user || $user->userType?->role_name !== 'admin') {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Unauthorized access.',
-            ], 403);
-        }
-
-        $subject = subjects::findOrFail($id);
-
-        // ✅ Validate fields with unique check except current
-        $validated = $request->validate([
-            'subject_code' => 'required|string|max:10|unique:subjects,subject_code,' . $id,
-            'subject_name' => 'required|string|max:100|unique:subjects,subject_name,' . $id,
-            'units' => 'required|integer|min:1',
+        $request->validate([
+            'course_id' => 'required|exists:courses,id',
+            'curriculum_name' => 'required|string|max:255',
+            'year_started' => 'required|integer',
         ]);
 
-        $subject->update($validated);
+        $curriculum = curriculum::find($id);
+
+        if (!$curriculum) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Curriculum not found.'
+            ]);
+        }
+
+        $curriculum->update([
+            'course_id' => $request->course_id,
+            'curriculum_name' => $request->curriculum_name,
+            'year_started' => $request->year_started,
+        ]);
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Subject updated successfully.',
-            'subject' => $subject,
-        ], 200);
-    } catch (ValidationException $e) {
+            'message' => 'Curriculum updated successfully.',
+            'curriculum' => [
+                'id' => $curriculum->id,
+                'course_id' => $curriculum->course_id,
+                'curriculum_name' => $curriculum->curriculum_name,
+                'year_started' => $curriculum->year_started,
+            ]
+        ]);
+    } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $e->errors(),
-        ], 422);
-    } catch (\Throwable $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to update subject.',
-            'error' => $e->getMessage(),
-        ], 500);
+            'message' => 'Failed to update curriculum.',
+            'error' => $e->getMessage()
+        ]);
     }
 }
+
 
 
     public function deleteSubject($id)
