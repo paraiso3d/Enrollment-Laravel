@@ -39,7 +39,7 @@ class CurriculumController extends Controller
     return response()->json([
         'isSuccess' => true,
         'message' => 'Curriculum created successfully.',
-        'data' => $curriculum->load('subjects'),
+        'curriculum' => $curriculum->load('subjects'),
     ]);
 }
 
@@ -51,7 +51,7 @@ class CurriculumController extends Controller
 
         return response()->json([
             'isSuccess' => true,
-            'data' => $curriculum,
+            'curriculum' => $curriculum,
         ]);
     }
 
@@ -79,7 +79,7 @@ class CurriculumController extends Controller
     return response()->json([
         'isSuccess' => true,
         'message' => 'Curriculum updated successfully.',
-        'data' => $curriculum->load('subjects'), // include related subjects in response
+        'curriculum' => $curriculum->load('subjects'), // include related subjects in response
     ]);
 }
 
