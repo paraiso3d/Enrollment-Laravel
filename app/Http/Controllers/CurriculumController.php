@@ -62,26 +62,31 @@ class CurriculumController extends Controller
 {
     $curriculum = curriculums::findOrFail($id);
 
+    // Validate inputs
     $validated = $request->validate([
         'curriculum_name' => 'sometimes|required|string|max:255',
         'curriculum_description' => 'nullable|string',
         'course_id' => 'sometimes|required|exists:courses,id',
-        'subject_ids' => 'nullable|array', // Add this
-        'subject_ids.*' => 'exists:subjects,id', // Validate each subject ID
+        'subject_ids' => 'nullable|array',
+        'subject_ids.*' => 'exists:subjects,id',
     ]);
 
-    // Update curriculum fields
-    $curriculum->update($validated);
+    // Only update the actual fields of the curriculum table
+    $curriculum->update([
+        'curriculum_name' => $validated['curriculum_name'] ?? $curriculum->curriculum_name,
+        'curriculum_description' => $validated['curriculum_description'] ?? $curriculum->curriculum_description,
+        'course_id' => $validated['course_id'] ?? $curriculum->course_id,
+    ]);
 
-    // Sync subjects if provided
-    if (isset($validated['subject_ids'])) {
+    // Sync subjects in pivot table if provided
+    if (!empty($validated['subject_ids'])) {
         $curriculum->subjects()->sync($validated['subject_ids']);
     }
 
     return response()->json([
         'isSuccess' => true,
         'message' => 'Curriculum updated successfully.',
-        'curriculum' => $curriculum->load('subjects'), // include related subjects in response
+        'curriculum' => $curriculum->load('subjects'),
     ]);
 }
 
