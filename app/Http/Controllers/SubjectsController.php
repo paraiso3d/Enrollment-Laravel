@@ -25,7 +25,6 @@ class SubjectsController extends Controller
                     'id' => $subject->id,
                     'subject_code' => $subject->subject_code,
                     'subject_name' => $subject->subject_name,
-                    'max_students' => $subject->max_students,
                     'units' => $subject->units,
                     'course_id' => $subject->course_id,
                     'course_name' => $subject->course ? $subject->course->course_name : null,
@@ -53,7 +52,6 @@ class SubjectsController extends Controller
         $request->validate([
             'subject_code' => 'required|string|max:20|unique:subjects,subject_code',
             'subject_name' => 'required|string|max:255',
-            'max_students' => 'required|string|max:255',
             'units' => 'required|numeric|min:0',
             'course_id' => 'required|exists:courses,id', // <-- course_id here
         ]);
@@ -61,7 +59,6 @@ class SubjectsController extends Controller
         $subject = subjects::create([
             'subject_code' => $request->subject_code,
             'subject_name' => $request->subject_name,
-            'max_students' => $request->max_students,
             'units' => $request->units,
             'course_id' => $request->course_id,
         ]);
@@ -87,7 +84,6 @@ public function updateSubject(Request $request, $id)
         $request->validate([
             'subject_code' => 'sometimes|string|max:20|unique:subjects,subject_code,' . $id,
             'subject_name' => 'sometimes|string|max:255',
-            'max_students' => 'sometimes|numeric|max:255',
             'units' => 'required|numeric|min:0',
             'course_id' => 'required|exists:courses,id', // <-- course_id here too
         ]);
@@ -104,7 +100,6 @@ public function updateSubject(Request $request, $id)
         $subject->update([
             'subject_code' => $request->subject_code,
             'subject_name' => $request->subject_name,
-            'max_students' => $request->max_students,
             'units' => $request->units,
             'course_id' => $request->course_id,
         ]);

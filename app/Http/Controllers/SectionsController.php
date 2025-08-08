@@ -33,6 +33,7 @@ class SectionsController extends Controller
                 return [
                     'id' => $section->id,
                     'section_name' => $section->section_name,
+                    'capacity'=> $section->max_students,
                     'course' => $section->course ? [
                         'id' => $section->course->id,
                         'name' => $section->course->course_name,
@@ -75,6 +76,7 @@ class SectionsController extends Controller
         // Validate the request data
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
+            'section_size' => 'required|integer|min:1|max:100',
             'course_id' => 'required|exists:courses,id',
             'campus_id' => 'required|exists:school_campus,id',
         ]);
@@ -94,6 +96,7 @@ class SectionsController extends Controller
 
           $section = sections::create([
             'section_name' => $validated['section_name'],
+            'max_students' => $validated['section_size'],
             'course_id' => $validated['course_id'],
             'campus_id' => $validated['campus_id'],
         ]);
@@ -119,11 +122,12 @@ class SectionsController extends Controller
     }
 }
 
-  public function updateSection(Request $request, $id)
+ public function updateSection(Request $request, $id)
 {
     try {
         $section = sections::findOrFail($id);
         $user = Auth::user();
+
         if (!$user) {
             return response()->json([
                 'isSuccess' => false,
@@ -132,15 +136,16 @@ class SectionsController extends Controller
         }
 
         $validated = $request->validate([
-            'section_name' => 'required|string|max:100',
-            'course_id' => 'required|exists:courses,id',
-            'campus_id' => 'required|exists:school_campus,id',
+            'section_name' => 'sometimes|string|max:100',
+            'course_id' => 'sometimes|exists:courses,id',
+            'campus_id' => 'sometimes|exists:school_campus,id',
+            'section_size' => 'sometimes|integer|min:1|max:100',
         ]);
 
         // Check for duplicates excluding current section
-        $duplicate = sections::where('section_name', $validated['section_name'])
-            ->where('course_id', $validated['course_id'])
-            ->where('campus_id', $validated['campus_id'])
+        $duplicate = sections::where('section_name', $validated['section_name'] ?? $section->section_name)
+            ->where('course_id', $validated['course_id'] ?? $section->course_id)
+            ->where('campus_id', $validated['campus_id'] ?? $section->campus_id)
             ->where('id', '!=', $id)
             ->first();
 
@@ -149,6 +154,21 @@ class SectionsController extends Controller
                 'isSuccess' => false,
                 'message' => 'A section with the same name already exists under this course and campus.',
             ], 409);
+        }
+
+        $currentEnrolled = $section->students()->count();
+
+        if (isset($validated['section_size']) && $validated['section_size'] < $currentEnrolled) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => "Cannot set section size to {$validated['section_size']}, because there are already {$currentEnrolled} students enrolled.",
+            ], 422);
+        }
+
+        // Map section_size to max_students
+        if (isset($validated['section_size'])) {
+            $validated['max_students'] = $validated['section_size'];
+            unset($validated['section_size']);
         }
 
         $section->update($validated);
@@ -178,6 +198,7 @@ class SectionsController extends Controller
         ], 500);
     }
 }
+
 
     public function deleteSection($id)
     {
