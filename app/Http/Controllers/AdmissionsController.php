@@ -659,13 +659,13 @@ class AdmissionsController extends Controller
                         });
 
                         // Mark email as sent
-                        $schedule->email_sent = true;
+                        $schedule->exam_sent = true;
                         $schedule->save();
                     }
 
                     $results[] = [
                         'applicant_id' => $id,
-                        'status' => 'email_sent',
+                        'status' => 'exam_sent',
                     ];
                 } else {
                     $results[] = [
