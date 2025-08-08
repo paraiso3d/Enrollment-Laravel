@@ -187,7 +187,7 @@ class EnrollmentsController extends Controller
             }
 
             // 🔄 Auto-enroll in subjects from curriculum
-            $$curriculumSubjectIds = $curriculum->subjects->pluck('id');
+            $curriculumSubjectIds = $curriculum->subjects->pluck('id');
 
             if (!empty($validated['subject_ids'])) {
                 $enrolledSubjectIds = collect($validated['subject_ids']);
