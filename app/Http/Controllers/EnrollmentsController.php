@@ -30,24 +30,43 @@ use Throwable;
 
 class EnrollmentsController extends Controller
 {
-    public function listEnrollments()
-    {
-        try {
-            // Fetch enrollments where is_archive is 0
-            $enrollments = enrollments::where('is_archive', 0)->get();
+    public function getStudentCurriculum($studentId)
+{
+    try {
+        $student = Student::with([
+            'enrollment.section.curriculum.subjects'
+        ])->find($studentId);
 
-            return response()->json([
-                'isSuccess' => true,
-                'enrollments' => $enrollments,
-            ], 200);
-        } catch (Throwable $e) {
+        if (!$student) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to retrieve enrollments.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Student not found.'
+            ]);
         }
+
+        $curriculumSubjects = optional($student->enrollment->section->curriculum)->subjects ?? collect([]);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Curriculum retrieved successfully.',
+            'student_number' => $student->student_number,
+            'curriculum_subjects' => $curriculumSubjects->map(function ($subject) {
+                return [
+                    'id' => $subject->id,
+                    'subject_code' => $subject->subject_code,
+                    'subject_name' => $subject->subject_name,
+                    'units' => $subject->units
+                ];
+            })
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve curriculum.',
+            'error' => $e->getMessage()
+        ]);
     }
+}
 
     public function getApprovedAdmissions()
     {

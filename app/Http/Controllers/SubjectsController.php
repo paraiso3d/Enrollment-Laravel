@@ -42,113 +42,85 @@ class SubjectsController extends Controller
 
 
     public function addSubject(Request $request)
-    {
-        try {
-            $user = auth()->user();
-            $user->load('userType');
+{
+    try {
+        $user = auth()->user();
+        $user->load('userType');
 
-            if (!$user || $user->userType?->role_name !== 'admin') {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Unauthorized access.',
-                ], 403);
-            }
-
-
-            // ✅ Validate input
-                $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'curriculum_id' => 'required|exists:curriculums,id', // ✅
-            'subject_code' => 'required|string|max:10',
-            'subject_name' => 'required|string|max:100',
-            'units' => 'required|integer|min:1',
-        ]);
-
-        $duplicate = subjects::where('course_id', $validated['course_id'])
-            ->where('curriculum_id', $validated['curriculum_id']) // ✅
-            ->where('subject_name', $validated['subject_name'])
-            ->first();
-
-        if ($duplicate) {
+        if (!$user || $user->userType?->role_name !== 'admin') {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Subject with the same name already exists in this curriculum.',
-            ], 409);
+                'message' => 'Unauthorized access.',
+            ], 403);
         }
+
+        // ✅ Validate only standalone subject fields
+        $validated = $request->validate([
+            'subject_code' => 'required|string|max:10|unique:subjects,subject_code',
+            'subject_name' => 'required|string|max:100|unique:subjects,subject_name',
+            'units' => 'required|integer|min:1',
+        ]);
 
         $subject = subjects::create($validated);
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Subject added successfully.',
-                'subject' => $subject,
-            ], 201);
-        } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Subject added successfully.',
+            'subject' => $subject,
+        ], 201);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to add subject.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+   public function updateSubject(Request $request, $id)
+{
+    try {
+        $user = auth()->user();
+        $user->load('userType');
+
+        if (!$user || $user->userType?->role_name !== 'admin') {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to add subject.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Unauthorized access.',
+            ], 403);
         }
-    }
 
-    public function updatesubject(Request $request, $id)
-    {
-        try {
-            $user = auth()->user();
-            $user->load('userType');
+        $subject = subjects::findOrFail($id);
 
-            if (!$user || $user->userType?->role_name !== 'admin') {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Unauthorized access.',
-                ], 403);
-            }
-
-            $subject = subjects::findOrFail($id);
-
-                $validated = $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'curriculum_id' => 'required|exists:curriculums,id', // ✅
-            'subject_code' => 'required|string|max:10',
-            'subject_name' => 'required|string|max:100',
+        // ✅ Validate fields with unique check except current
+        $validated = $request->validate([
+            'subject_code' => 'required|string|max:10|unique:subjects,subject_code,' . $id,
+            'subject_name' => 'required|string|max:100|unique:subjects,subject_name,' . $id,
             'units' => 'required|integer|min:1',
         ]);
 
-        $duplicate = subjects::where('course_id', $validated['course_id'])
-            ->where('curriculum_id', $validated['curriculum_id']) // ✅
-            ->where('subject_name', $validated['subject_name'])
-            ->where('id', '<>', $id)
-            ->first();
-            
-            if ($duplicate) {
-                return response()->json([
-                    'isSuccess' => false,
-                    'message' => 'Subject with the same name already exists in this course.',
-                ], 409);
-            }
+        $subject->update($validated);
 
-            $subject->update($validated);
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Subject updated successfully.',
-                'subject' => $subject,
-            ], 200);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Validation failed.',
-                'errors' => $e->errors(),
-            ], 422);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to update subject.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Subject updated successfully.',
+            'subject' => $subject,
+        ], 200);
+    } catch (ValidationException $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $e->errors(),
+        ], 422);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to update subject.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function deleteSubject($id)
     {
