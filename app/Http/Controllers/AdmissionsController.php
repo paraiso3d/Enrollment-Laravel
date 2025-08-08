@@ -624,7 +624,7 @@ class AdmissionsController extends Controller
                 $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
 
                 // Check if email was already sent
-                if (!$schedule->email_sent) {
+                if (!$schedule->exam_sent) {
                     $examDateFormatted = date('F d, Y', strtotime($examDate));
                     $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
                     $email = $admission->email;
