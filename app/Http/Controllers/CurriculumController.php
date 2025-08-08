@@ -44,6 +44,8 @@ class CurriculumController extends Controller
 }
 
 
+
+
     // Show a specific curriculum with subjects
     public function showcurriculum($id)
     {

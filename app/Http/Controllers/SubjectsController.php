@@ -188,4 +188,33 @@ class SubjectsController extends Controller
             ], 500);
         }
     }
+
+    //Dropdown
+
+    public function getSubjectsDropdown()
+{
+    try {
+        $subjects = subjects::where('is_archived', 0)
+            ->pluck('subject_name', 'id')
+            ->map(function ($subject_name, $id) {
+                return [
+                    'id' => $id,
+                    'subject_name' => $subject_name,
+                ];
+            })
+            ->values(); // Reset array keys for clean indexing
+
+        return response()->json([
+            'isSuccess' => true,
+            'subject' => $subjects,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve subjects.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
 }
