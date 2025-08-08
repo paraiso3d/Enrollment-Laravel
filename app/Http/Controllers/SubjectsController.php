@@ -46,82 +46,78 @@ class SubjectsController extends Controller
 
 
 
-   public function addCurriculum(Request $request)
+   public function addSubject(Request $request)
 {
     try {
         $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'curriculum_name' => 'required|string|max:255',
-            'year_started' => 'required|integer',
+            'subject_code' => 'required|string|max:20|unique:subjects,subject_code',
+            'subject_name' => 'required|string|max:255',
+            'units' => 'required|numeric|min:0',
+            'course_id' => 'required|exists:courses,id', // <-- course_id here
         ]);
 
-        $curriculum = curriculum::create([
+        $subject = subjects::create([
+            'subject_code' => $request->subject_code,
+            'subject_name' => $request->subject_name,
+            'units' => $request->units,
             'course_id' => $request->course_id,
-            'curriculum_name' => $request->curriculum_name,
-            'year_started' => $request->year_started,
         ]);
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Curriculum added successfully.',
-            'curriculum' => [
-                'id' => $curriculum->id,
-                'course_id' => $curriculum->course_id,
-                'curriculum_name' => $curriculum->curriculum_name,
-                'year_started' => $curriculum->year_started,
-            ]
+            'message' => 'Subject added successfully.',
+            'subject' => $subject
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Failed to add curriculum.',
+            'message' => 'Failed to add subject.',
             'error' => $e->getMessage()
         ]);
     }
 }
 
-   public function updateCurriculum(Request $request, $id)
+
+public function updateSubject(Request $request, $id)
 {
     try {
         $request->validate([
-            'course_id' => 'required|exists:courses,id',
-            'curriculum_name' => 'required|string|max:255',
-            'year_started' => 'required|integer',
+            'subject_code' => 'required|string|max:20|unique:subjects,subject_code,' . $id,
+            'subject_name' => 'required|string|max:255',
+            'units' => 'required|numeric|min:0',
+            'course_id' => 'required|exists:courses,id', // <-- course_id here too
         ]);
 
-        $curriculum = curriculum::find($id);
+        $subject = subjects::find($id);
 
-        if (!$curriculum) {
+        if (!$subject) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Curriculum not found.'
+                'message' => 'Subject not found.'
             ]);
         }
 
-        $curriculum->update([
+        $subject->update([
+            'subject_code' => $request->subject_code,
+            'subject_name' => $request->subject_name,
+            'units' => $request->units,
             'course_id' => $request->course_id,
-            'curriculum_name' => $request->curriculum_name,
-            'year_started' => $request->year_started,
         ]);
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Curriculum updated successfully.',
-            'curriculum' => [
-                'id' => $curriculum->id,
-                'course_id' => $curriculum->course_id,
-                'curriculum_name' => $curriculum->curriculum_name,
-                'year_started' => $curriculum->year_started,
-            ]
+            'message' => 'Subject updated successfully.',
+            'subject' => $subject
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Failed to update curriculum.',
+            'message' => 'Failed to update subject.',
             'error' => $e->getMessage()
         ]);
     }
 }
+
 
 
 
