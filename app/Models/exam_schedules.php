@@ -20,6 +20,7 @@ class exam_schedules extends Model
         'exam_time_from',
         'exam_time_to',
         'academic_year',
+        'exam_sent'
     ];
 
     // Relationships (if needed)
