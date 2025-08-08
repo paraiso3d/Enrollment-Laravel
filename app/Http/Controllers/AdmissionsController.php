@@ -599,7 +599,13 @@ class AdmissionsController extends Controller
                     $admission->save();
                 }
 
-               exam_schedules::updateOrCreate(
+              // Retrieve existing schedule first
+                $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
+
+                $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
+
+                // Update or create the schedule, preserving the exam_sent value
+                exam_schedules::updateOrCreate(
                     ['applicant_id' => $admission->id],
                     [
                         'test_permit_no' => $admission->test_permit_no,
@@ -610,10 +616,11 @@ class AdmissionsController extends Controller
                         'exam_date' => $examDate,
                         'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
                         'academic_year' => $admission->school_years->school_year,
+                        'exam_sent' => $wasAlreadySent // 👈 This line preserves the current value
                     ]
                 );
 
-                // REFRESH the model from DB
+                // Now re-fetch updated schedule from DB
                 $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
 
                 // Check if email was already sent
