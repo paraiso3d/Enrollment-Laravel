@@ -599,7 +599,7 @@ class AdmissionsController extends Controller
                     $admission->save();
                 }
 
-                $schedule = exam_schedules::updateOrCreate(
+               exam_schedules::updateOrCreate(
                     ['applicant_id' => $admission->id],
                     [
                         'test_permit_no' => $admission->test_permit_no,
@@ -612,6 +612,9 @@ class AdmissionsController extends Controller
                         'academic_year' => $admission->school_years->school_year,
                     ]
                 );
+
+                // REFRESH the model from DB
+                $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
 
                 // Check if email was already sent
                 if (!$schedule->email_sent) {
