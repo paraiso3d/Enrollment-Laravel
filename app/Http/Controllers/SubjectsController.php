@@ -15,28 +15,18 @@ class SubjectsController extends Controller
 {
     public function getSubjects()
     {
-        try {
-            // Retrieve all non-archived subjects with their associated course
-            $subjects = subjects::with(['course', 'curriculum']) // ✅
-            ->where('is_archived', 0)
+    try {
+        // Retrieve all non-archived subjects (no relationships)
+        $subjects = subjects::where('is_archived', 0)
             ->get()
             ->map(function ($subject) {
-        return [
-            'id' => $subject->id,
-            'subject_code' => $subject->subject_code,
-            'subject_name' => $subject->subject_name,
-            'units' => $subject->units,
-            'course' => [
-                'id' => $subject->course->id,
-                'course_name' => $subject->course->course_name,
-            ],
-            'curriculum' => [
-                'id' => $subject->curriculum->id,
-                'curriculum_name' => $subject->curriculum->curriculum_name,
-            ]
-        ];
-    });
-
+                return [
+                    'id' => $subject->id,
+                    'subject_code' => $subject->subject_code,
+                    'subject_name' => $subject->subject_name,
+                    'units' => $subject->units,
+                ];
+            });
             return response()->json([
                 'isSuccess' => true,
                 'subjects' => $subjects,

@@ -187,10 +187,9 @@ class EnrollmentsController extends Controller
             }
 
             // 🔄 Auto-enroll in subjects from curriculum
-            $curriculumSubjectIds = $curriculum->subjects->pluck('id');
+            $$curriculumSubjectIds = $curriculum->subjects->pluck('id');
 
-            // If no subjects in curriculum and manual ones are provided
-            if ($curriculumSubjectIds->isEmpty() && !empty($validated['subject_ids'])) {
+            if (!empty($validated['subject_ids'])) {
                 $enrolledSubjectIds = collect($validated['subject_ids']);
             } elseif ($curriculumSubjectIds->isNotEmpty()) {
                 $enrolledSubjectIds = $curriculumSubjectIds;
@@ -201,13 +200,16 @@ class EnrollmentsController extends Controller
                 ], 404);
             }
 
+
             // 🔄 Assign section
           $section = sections::where('course_id', $courseId)
             ->withCount('students')
             ->get()
-            ->firstWhere(function ($section) {
+            ->filter(function ($section) {
                 return $section->students_count < $section->max_students;
-            });
+            })
+            ->first();
+
 
 
             if (!$section) {
