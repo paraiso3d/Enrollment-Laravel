@@ -13,11 +13,12 @@ use App\Models\subjects;
 
 class SubjectsController extends Controller
 {
-    public function getSubjects()
-    {
+   public function getSubjects()
+{
     try {
-        // Retrieve all non-archived subjects (no relationships)
-        $subjects = subjects::where('is_archived', 0)
+        // Retrieve all non-archived subjects along with their course
+        $subjects = subjects::with('course')
+            ->where('is_archived', 0)
             ->get()
             ->map(function ($subject) {
                 return [
@@ -25,20 +26,24 @@ class SubjectsController extends Controller
                     'subject_code' => $subject->subject_code,
                     'subject_name' => $subject->subject_name,
                     'units' => $subject->units,
+                    'course_id' => $subject->course_id,
+                    'course_name' => $subject->course ? $subject->course->course_name : null,
                 ];
             });
-            return response()->json([
-                'isSuccess' => true,
-                'subjects' => $subjects,
-            ], 200);
-        } catch (\Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve subjects.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'subjects' => $subjects,
+        ], 200);
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve subjects.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
 
    public function addCurriculum(Request $request)
