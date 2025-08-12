@@ -22,6 +22,7 @@ use App\Models\exam_schedules;
 use App\Models\campus_buildings;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Storage;
 use Throwable;
 use Exception;
 use Illuminate\Support\Facades\Log;
@@ -426,11 +427,11 @@ class AdmissionsController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
                 'status' => 'pending',
 
-                'form_137' => $this->moveToPublicFolder($request, 'form_137', 'form_137'),
-                'form_138' => $this->moveToPublicFolder($request, 'form_138', 'form_138'),
-                'birth_certificate' => $this->moveToPublicFolder($request, 'birth_certificate', 'birth_cert'),
-                'good_moral' => $this->moveToPublicFolder($request, 'good_moral', 'good_moral'),
-                'certificate_of_completion' => $this->moveToPublicFolder($request, 'certificate_of_completion', 'completion_cert'),
+                'form_137' => $this->moveToStorageDisk($request, 'form_137', 'form_137'),
+                'form_138' => $this->moveToStorageDisk($request, 'form_138', 'form_138'),
+                'birth_certificate' => $this->moveToStorageDisk($request, 'birth_certificate', 'birth_cert'),
+                'good_moral' => $this->moveToStorageDisk($request, 'good_moral', 'good_moral'),
+                'certificate_of_completion' => $this->moveToStorageDisk($request, 'certificate_of_completion', 'completion_cert'),
             ]);
 
             // Send email
@@ -895,20 +896,20 @@ public function sendExamination(Request $request)
 
 
     //HELPERS
-    private function moveToPublicFolder($request, $fieldName, $prefix)
-    {
-        if ($request->hasFile($fieldName)) {
-            $file = $request->file($fieldName);
-            $filename = $prefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+    private function moveToStorageDisk($request, $fieldName, $prefix)
+{
+    if ($request->hasFile($fieldName)) {
+        $file = $request->file($fieldName);
+        $filename = $prefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
 
-            // Save to public folder (e.g., public/admission_files/)
-            $file->move(public_path('admission_files'), $filename);
+        // Store file in storage/app/public/admission_files
+        $path = $file->storeAs('admission_files', $filename, 'public');
 
-            // Return relative path for DB
-            return 'admission_files/' . $filename;
-        }
-        return null;
+        // Return the path relative to the public folder, e.g. storage/admission_files/filename.png
+        return $path;
     }
+    return null;
+}
     
 
 
