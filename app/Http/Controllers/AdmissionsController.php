@@ -985,4 +985,23 @@ public function sendExamination(Request $request)
         $rooms = building_rooms::where('building_id', $id)->get();
         return response()->json($rooms);
     }
+
+    public function getBuildingDropdown()
+    {
+        try {
+            $buildings = campus_buildings::select('id', 'building_name')->get();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Campus buildings fetched successfully.',
+                'buildings' => $buildings
+            ]);
+        } catch (Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to fetch campus buildings.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
 }
