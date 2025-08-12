@@ -33,6 +33,52 @@ class AdmissionsController extends Controller
 {
 
 
+  public function getExamSchedules()
+{
+    try {
+        $schedules = exam_schedules::with([
+            'applicant' => function($query) {
+                $query->select([
+                    'id',
+                    'first_name', 
+                    'last_name', 
+                    'email', 
+                    'contact_number',
+                ]);
+            },
+            'room' => function($query) {
+                $query->select(['id', 'room_name']);
+            },
+            'building' => function($query) {
+                $query->select(['id', 'building_name']);
+            }
+        ])->get([
+            'id',
+            'applicant_id',
+            'test_permit_no',
+            'room_id',
+            'building_id',
+            'exam_time_from',
+            'exam_time_to',
+            'exam_date',
+            'testing_center'
+        ]);
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Exam schedules retrieved successfully.',
+            'data' => $schedules,
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve exam schedules.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 
     public function getAdmissionById($id)
     {
@@ -586,30 +632,29 @@ class AdmissionsController extends Controller
 public function sendExamination(Request $request)
 {
     try {
-   $request->validate([
-    'applicant_ids' => 'required|array',
-    'applicant_ids.*' => 'exists:admissions,id',
-    'exam_date' => 'required|date',
-    'exam_time_from' => 'required|date_format:H:i',
-    'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
-    'building_id' => 'required|exists:campus_buildings,id',
-    'room_id' => [
-        'required',
-        'exists:building_rooms,id',
-        function ($attribute, $value, $fail) use ($request) {
-            $room = \App\Models\building_rooms::find($value);
-            if (!$room || $room->building_id != $request->building_id) {
-                $fail('The selected room does not belong to the selected building.');
-            }
-        }
-    ],
-]);
-
+        $request->validate([
+            'applicant_ids' => 'required|array',
+            'applicant_ids.*' => 'exists:admissions,id',
+            'exam_date' => 'required|date',
+            'exam_time_from' => 'required|date_format:H:i',
+            'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
+            'building_id' => 'required|exists:campus_buildings,id',
+            'room_id' => [
+                'required',
+                'exists:building_rooms,id',
+                function ($attribute, $value, $fail) use ($request) {
+                    $room = \App\Models\building_rooms::find($value);
+                    if (!$room || $room->building_id != $request->building_id) {
+                        $fail('The selected room does not belong to the selected building.');
+                    }
+                }
+            ],
+        ]);
 
         $examDate = $request->exam_date;
         $results = [];
 
-        // Get building & room names
+        // Get building & room models for email content and validation
         $building = campus_buildings::find($request->building_id);
         $room = building_rooms::find($request->room_id);
 
@@ -617,14 +662,14 @@ public function sendExamination(Request $request)
             try {
                 $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
 
-                 if (strtolower($admission->status) === 'rejected') {
-                $results[] = [
-                    'applicant_id' => $id,
-                    'status' => 'skipped',
-                    'message' => 'Applicant is rejected and will not be scheduled.',
-                ];
-                continue;
-            }
+                if (strtolower($admission->status) === 'rejected') {
+                    $results[] = [
+                        'applicant_id' => $id,
+                        'status' => 'skipped',
+                        'message' => 'Applicant is rejected and will not be scheduled.',
+                    ];
+                    continue;
+                }
 
                 if (!$admission->test_permit_no) {
                     $prefix = "SNL-";
@@ -637,19 +682,19 @@ public function sendExamination(Request $request)
                 $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
                 $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
 
-                // Update or create the schedule, preserving the exam_sent value
+                // Update or create the schedule, now with room_id and building_id foreign keys
                 exam_schedules::updateOrCreate(
                     ['applicant_id' => $admission->id],
                     [
                         'test_permit_no' => $admission->test_permit_no,
-                        'room_assignment' => $room->room_name,
-                        'building' => $building->building_name,
+                        'room_id' => $room->id,
+                        'building_id' => $building->id,
                         'exam_time_from' => $request->exam_time_from,
                         'exam_time_to' => $request->exam_time_to,
                         'exam_date' => $examDate,
                         'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
                         'academic_year' => $admission->school_years->school_year,
-                        'exam_sent' => $wasAlreadySent
+                        'exam_sent' => $wasAlreadySent,
                     ]
                 );
 
@@ -667,6 +712,7 @@ public function sendExamination(Request $request)
                     $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
 
                     if ($email) {
+                        // Use room & building names from the models for the email content
                         Mail::html("
                             <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
                                 <h2>SNL University Online Exam Schedule</h2>
@@ -725,6 +771,7 @@ public function sendExamination(Request $request)
         ]);
     }
 }
+
 
 
 
@@ -843,6 +890,49 @@ public function sendExamination(Request $request)
         return response()->json([
             'isSuccess' => false,
             'message' => 'Reservation failed.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
+   public function inputExamScores(Request $request, $id)
+{
+    try {
+        $admission = admissions::findOrFail($id);
+
+        $validated = $request->validate([
+            'exam_score' => 'required|numeric|min:0|max:100',
+            'remarks' => 'nullable|string|max:255',
+        ]);
+
+        // Save or update exam score and remarks
+        $admission->exam_score = $validated['exam_score'];
+        $admission->remarks = $validated['remarks'] ?? null;
+
+        // Auto-calc pass or fail based on average or threshold
+        // Let's say passing is 75 or higher
+        $passingScore = 75;
+
+        $admission->exam_status = ($validated['exam_score'] >= $passingScore) ? 'passed' : 'reconsider';
+
+        $admission->save();
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Exam score saved successfully.',
+            'admission' => $admission,
+        ]);
+    } catch (ValidationException $ve) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Validation failed.',
+            'errors' => $ve->errors(),
+        ], 422);
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to save exam score.',
             'error' => $e->getMessage(),
         ], 500);
     }

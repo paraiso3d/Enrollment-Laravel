@@ -47,6 +47,7 @@ Route::get('getusertypes', [UserTypesController::class, 'getUserTypes']);
 
 // Login and Logout 
 Route::post('login', [AuthController::class, 'login']);
+Route::post('forgotpassword', [AuthController::class, 'forgotPassword']);
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('logout', [AuthController::class, 'logout']);
 });
@@ -86,7 +87,7 @@ Route::get('getusers', [AccountsController::class, 'getUsers']);
 // Route::post('updateprofile', [AccountsController::class, 'updateProfile'])->middleware('auth:sanctum');
 
 // // Admissions Management
-
+Route::get('getexaminees', [AdmissionsController::class, 'getExamSchedules']);
 Route::get('getadmissions', [AdmissionsController::class, 'getAdmissions']);
 Route::post('applyadmission', [AdmissionsController::class, 'applyAdmission']);
 Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])->middleware('auth:sanctum');

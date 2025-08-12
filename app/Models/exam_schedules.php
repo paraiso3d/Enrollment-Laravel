@@ -13,8 +13,8 @@ class exam_schedules extends Model
         'applicant_id',
         'academic_program_id',
         'test_permit_no',
-        'room_assignment',
-        'building',
+        'room_id',
+        'building_id',
         'testing_center',
         'exam_date',
         'exam_time_from',
@@ -33,4 +33,14 @@ class exam_schedules extends Model
     {
         return $this->belongsTo(courses::class, 'academic_program_id');
     }
+
+    public function room()
+{
+    return $this->belongsTo(building_rooms::class, 'room_id');
+}
+
+public function building()
+{
+    return $this->belongsTo(campus_buildings::class, 'building_id');
+}
 }

@@ -58,6 +58,7 @@ class Admissions extends Model
         'last_school_attended',
         'remarks',
         'status',
+        'exam_score',
 
         'form_137',
         'form_138',
@@ -80,7 +81,7 @@ class Admissions extends Model
 
     public function generateTestPermitNo()
     {
-        $prefix = "BULSU-";
+        $prefix = "SNL-";
         $paddedId = str_pad($this->id, 5, '0', STR_PAD_LEFT);
         return $prefix . $paddedId;
     }
