@@ -315,7 +315,7 @@ class AdmissionsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'lrn'=> 'required|number|max:20',
+                'lrn'=> 'required|numeric',
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
