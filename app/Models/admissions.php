@@ -36,6 +36,7 @@ class Admissions extends Model
         'province',
         'city',
         'barangay',
+        'blood_type',
 
         'nationality',
         'religion',

@@ -605,6 +605,14 @@ public function sendExamination(Request $request)
             try {
                 $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
 
+                 if (strtolower($admission->status) === 'rejected') {
+                $results[] = [
+                    'applicant_id' => $id,
+                    'status' => 'skipped',
+                    'message' => 'Applicant is rejected and will not be scheduled.',
+                ];
+                continue;
+
                 if (!$admission->test_permit_no) {
                     $prefix = "BULSU-";
                     $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
