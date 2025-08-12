@@ -52,31 +52,69 @@ class AdmissionsController extends Controller
             'building' => function($query) {
                 $query->select(['id', 'building_name']);
             }
-        ])->get([
-            'id',
-            'applicant_id',
-            'test_permit_no',
-            'room_id',
-            'building_id',
-            'exam_time_from',
-            'exam_time_to',
-            'exam_date',
-            'testing_center'
-        ]);
+        ])->get();
+
+        // Group by testing center
+        $grouped = $schedules->groupBy('testing_center')->map(function ($testingCenterSchedules, $testingCenterName) {
+            // Group by building inside testing center
+            $buildings = $testingCenterSchedules->groupBy('building_id')->map(function ($buildingSchedules) {
+                $buildingName = $buildingSchedules->first()->building->building_name ?? 'Unknown Building';
+
+                // Group by room inside building
+                $rooms = $buildingSchedules->groupBy('room_id')->map(function ($roomSchedules) {
+                    $roomName = $roomSchedules->first()->room->room_name ?? 'Unknown Room';
+
+                    // Map students info inside room
+                    $students = $roomSchedules->map(function ($schedule) {
+                        $applicant = $schedule->applicant;
+                        return [
+                            'schedule_id' => $schedule->id,
+                            'applicant_id' => $applicant->id ?? null,
+                            'test_permit_no' => $schedule->test_permit_no,
+                            'first_name' => $applicant->first_name ?? 'N/A',
+                            'last_name' => $applicant->last_name ?? 'N/A',
+                            'email' => $applicant->email ?? 'N/A',
+                            'contact_number' => $applicant->contact_number ?? 'N/A',
+                            'exam_date' => $schedule->exam_date,
+                            'exam_time_from' => $schedule->exam_time_from,
+                            'exam_time_to' => $schedule->exam_time_to,
+                        ];
+                    })->values();
+
+                    return [
+                        'room_id' => $roomSchedules->first()->room_id,
+                        'room_name' => $roomName,
+                        'students' => $students,
+                    ];
+                })->values();
+
+                return [
+                    'building_id' => $buildingSchedules->first()->building_id,
+                    'building_name' => $buildingName,
+                    'rooms' => $rooms,
+                ];
+            })->values();
+
+            return [
+                'testing_center' => $testingCenterName,
+                'buildings' => $buildings,
+            ];
+        })->values();
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Exam schedules retrieved successfully.',
-            'data' => $schedules,
+            'message' => 'Exam schedules grouped by testing center, building, and room.',
+            'data' => $grouped,
         ]);
     } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
-            'message' => 'Failed to retrieve exam schedules.',
+            'message' => 'Failed to retrieve grouped exam schedules.',
             'error' => $e->getMessage(),
         ], 500);
     }
 }
+
 
 
 
