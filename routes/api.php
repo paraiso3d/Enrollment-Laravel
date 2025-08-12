@@ -128,16 +128,16 @@ Route::post('deletecampus/{id}', [SchoolCampusController::class, 'deleteCampus']
  });
 
 
-// // Account Management
-// Route::middleware('auth:sanctum')->group(function () {
+// Account Management
+Route::middleware('auth:sanctum')->group(function () {
 //     Route::get('getaccounts', [AccountsController::class, 'getAccounts']);
 //     Route::post('addaccount', [AccountsController::class, 'adminCreateAccount']);
 //     Route::get('getprofile', [AccountsController::class, 'getProfile']);
 //     Route::post('changeprofile', [AccountsController::class, 'changeProfile']);
-//     Route::post('changepassword', [AccountsController::class, 'changePassword']);
+    Route::post('changepassword', [AccountsController::class, 'changePassword']);
 //     Route::post('deleteaccount', [AccountsController::class, 'deleteAccount']);
 //     Route::get('restoreaccount', [AccountsController::class, 'restoreAccount']);
-// });
+});
 
 // // User Types Management
 Route::middleware('auth:sanctum')->group(function (){ 

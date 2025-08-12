@@ -310,6 +310,7 @@ class AdmissionsController extends Controller
     {
         try {
             $validated = $request->validate([
+                'lrn'=> 'required|string|max:20',
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
@@ -357,11 +358,11 @@ class AdmissionsController extends Controller
                 'last_school_attended' => 'nullable|string|max:255',
                 'remarks' => 'nullable|string|max:255',
 
-                'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-                'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+                'form_137' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+                'form_138' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+                'birth_certificate' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+                'good_moral' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
+                'certificate_of_completion' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:10240',
             ]);
 
             // Fetch names from related tables using IDs
@@ -381,7 +382,8 @@ class AdmissionsController extends Controller
                 'school_campus_id' => $validated['school_campus_id'],
                 'application_type' => $validated['application_type'],
                 'academic_program_id' => $validated['academic_program_id'],
-
+                
+                'lrn' => $validated['lrn'],
                 'first_name' => $validated['given_name'],
                 'middle_name' => $validated['middle_name'] ?? '',
                 'last_name' => $validated['surname'],
