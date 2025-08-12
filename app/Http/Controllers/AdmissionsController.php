@@ -612,6 +612,7 @@ public function sendExamination(Request $request)
                     'message' => 'Applicant is rejected and will not be scheduled.',
                 ];
                 continue;
+            }
 
                 if (!$admission->test_permit_no) {
                     $prefix = "BULSU-";
