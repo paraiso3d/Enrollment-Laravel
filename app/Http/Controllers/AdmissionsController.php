@@ -136,10 +136,10 @@ class AdmissionsController extends Controller
         
         // Files as full URLs
      'good_moral' => $admission->good_moral ? asset($admission->good_moral) : null,
-    'form_137' => $admission->form_137 ? asset($admission . $admission->form_137) : null,
-    'form_138' => $admission->form_138 ? asset($admission . $admission->form_138) : null,
-    'birth_certificate' => $admission->birth_certificate ? asset($admission . $admission->birth_certificate) : null,
-    'certificate_of_completion' => $admission->certificate_of_completion ? asset($admission . $admission->certificate_of_completion) : null,
+    'form_137' => $admission->form_137 ? asset($admission->form_137) : null,
+    'form_138' => $admission->form_138 ? asset($admission->form_138) : null,
+    'birth_certificate' => $admission->birth_certificate ? asset($admission->birth_certificate) : null,
+    'certificate_of_completion' => $admission->certificate_of_completion ? asset($admission->certificate_of_completion) : null,
 
 
         'grade_level' => $admission->grade_level,
