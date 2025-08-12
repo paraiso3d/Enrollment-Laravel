@@ -135,11 +135,11 @@ class AdmissionsController extends Controller
         'remarks' => $admission->remarks,
         
         // Files as full URLs
-        'good_moral' => $admission->good_moral ? url($storagePath . $admission->good_moral) : null,
-        'form_137' => $admission->form_137 ? url($storagePath . $admission->form_137) : null,
-        'form_138' => $admission->form_138 ? url($storagePath . $admission->form_138) : null,
-        'birth_certificate' => $admission->birth_certificate ? url($storagePath . $admission->birth_certificate) : null,
-        'certificate_of_completion' => $admission->certificate_of_completion ? url($storagePath . $admission->certificate_of_completion) : null,
+        'good_moral' => $admission->good_moral ? Storage::url($admission->good_moral) : null,
+        'form_137' => $admission->form_137 ? Storage::url($admission->form_137) : null,
+        'form_138' => $admission->form_138 ? Storage::url($admission->form_138) : null,
+        'birth_certificate' => $admission->birth_certificate ? Storage::url($admission->birth_certificate) : null,
+        'certificate_of_completion' => $admission->certificate_of_completion ? Storage::url($admission->certificate_of_completion) : null,
 
         'grade_level' => $admission->grade_level,
         'guardian_name' => $admission->guardian_name,
