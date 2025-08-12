@@ -98,7 +98,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');
 Route::post('acceptadmission/{id}', [AdmissionsController::class, 'acceptapplication'])->middleware('auth:sanctum');
 Route::post('approveadmission/{id}', [AdmissionsController::class, 'approveAdmission'])->middleware('auth:sanctum');
-// Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
+Route::post('rejectadmission/{id}', [AdmissionsController::class, 'rejectAdmission'])->middleware('auth:sanctum');
 });
 // //Enrellments Management
 Route::middleware('auth:sanctum')->group(function () {

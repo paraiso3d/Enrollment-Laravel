@@ -836,7 +836,6 @@ public function sendExamination(Request $request)
 
             // Update admission status
             $admission->status = 'rejected';
-            $admission->status_by = $rejector->id;
             $admission->save();
 
             return response()->json([
