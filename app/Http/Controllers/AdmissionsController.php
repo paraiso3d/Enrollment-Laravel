@@ -135,11 +135,12 @@ class AdmissionsController extends Controller
         'remarks' => $admission->remarks,
         
         // Files as full URLs
-        'good_moral' => $admission->good_moral ? Storage::url($admission->good_moral) : null,
-        'form_137' => $admission->form_137 ? Storage::url($admission->form_137) : null,
-        'form_138' => $admission->form_138 ? Storage::url($admission->form_138) : null,
-        'birth_certificate' => $admission->birth_certificate ? Storage::url($admission->birth_certificate) : null,
-        'certificate_of_completion' => $admission->certificate_of_completion ? Storage::url($admission->certificate_of_completion) : null,
+     'good_moral' => $admission->good_moral ? asset($admission->good_moral) : null,
+    'form_137' => $admission->form_137 ? asset($admission . $admission->form_137) : null,
+    'form_138' => $admission->form_138 ? asset($admission . $admission->form_138) : null,
+    'birth_certificate' => $admission->birth_certificate ? asset($admission . $admission->birth_certificate) : null,
+    'certificate_of_completion' => $admission->certificate_of_completion ? asset($admission . $admission->certificate_of_completion) : null,
+
 
         'grade_level' => $admission->grade_level,
         'guardian_name' => $admission->guardian_name,
@@ -427,11 +428,11 @@ class AdmissionsController extends Controller
                 'remarks' => $validated['remarks'] ?? null,
                 'status' => 'pending',
 
-                'form_137' => $this->moveToStorageDisk($request, 'form_137', 'form_137'),
-                'form_138' => $this->moveToStorageDisk($request, 'form_138', 'form_138'),
-                'birth_certificate' => $this->moveToStorageDisk($request, 'birth_certificate', 'birth_cert'),
-                'good_moral' => $this->moveToStorageDisk($request, 'good_moral', 'good_moral'),
-                'certificate_of_completion' => $this->moveToStorageDisk($request, 'certificate_of_completion', 'completion_cert'),
+                'form_137' => $this->saveFileToPublic($request, 'form_137', 'form_137'),
+                'form_138' => $this->saveFileToPublic($request, 'form_138', 'form_138'),
+                'birth_certificate' => $this->saveFileToPublic($request, 'birth_certificate', 'birth_cert'),
+                'good_moral' => $this->saveFileToPublic($request, 'good_moral', 'good_moral'),
+                'certificate_of_completion' => $this->saveFileToPublic($request, 'certificate_of_completion', 'completion_cert'),
             ]);
 
             // Send email
@@ -896,21 +897,20 @@ public function sendExamination(Request $request)
 
 
     //HELPERS
-    private function moveToStorageDisk($request, $fieldName, $prefix)
+private function saveFileToPublic(Request $request, $field, $prefix)
 {
-    if ($request->hasFile($fieldName)) {
-        $file = $request->file($fieldName);
+    if ($request->hasFile($field)) {
+        $file = $request->file($field);
+        $directory = public_path('admission_files');
+        if (!file_exists($directory)) {
+            mkdir($directory, 0755, true);
+        }
         $filename = $prefix . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
-
-        // Store file in storage/app/public/admission_files
-        $path = $file->storeAs('admission_files', $filename, 'public');
-
-        // Return the path relative to the public folder, e.g. storage/admission_files/filename.png
-        return $path;
+        $file->move($directory, $filename);
+        return 'admission_files/' . $filename;
     }
     return null;
 }
-    
 
 
     //Dropdowns
