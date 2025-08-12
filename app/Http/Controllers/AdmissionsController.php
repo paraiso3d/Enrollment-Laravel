@@ -14,10 +14,12 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Mail;
 use App\Models\accounts;
 use App\Models\AdmissionReservation;
+use App\Models\building_rooms;
 use App\Models\courses;
 use App\Models\school_campus;
 use App\Models\school_years;
 use App\Models\exam_schedules;
+use App\Models\campus_buildings;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Carbon;
 use Throwable;
@@ -572,7 +574,7 @@ class AdmissionsController extends Controller
 
 
 
-  public function sendExamination(Request $request)
+public function sendExamination(Request $request)
 {
     try {
         $request->validate([
@@ -581,12 +583,16 @@ class AdmissionsController extends Controller
             'exam_date' => 'required|date',
             'exam_time_from' => 'required|date_format:H:i',
             'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
-            'room_assignment' => 'required|string',
-            'building' => 'required|string',
+            'building_id' => 'required|exists:campus_buildings,id',
+            'room_id' => 'required|exists:building_rooms,id',
         ]);
 
-        $examDate = $request->input('exam_date');
+        $examDate = $request->exam_date;
         $results = [];
+
+        // Get building & room names
+        $building = campus_buildings::find($request->building_id);
+        $room = building_rooms::find($request->room_id);
 
         foreach ($request->applicant_ids as $id) {
             try {
@@ -599,9 +605,8 @@ class AdmissionsController extends Controller
                     $admission->save();
                 }
 
-              // Retrieve existing schedule first
+                // Retrieve existing schedule first
                 $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
-
                 $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
 
                 // Update or create the schedule, preserving the exam_sent value
@@ -609,21 +614,20 @@ class AdmissionsController extends Controller
                     ['applicant_id' => $admission->id],
                     [
                         'test_permit_no' => $admission->test_permit_no,
-                        'room_assignment' => $request->room_assignment,
-                        'building' => $request->building,
+                        'room_assignment' => $room->room_name,
+                        'building' => $building->building_name,
                         'exam_time_from' => $request->exam_time_from,
                         'exam_time_to' => $request->exam_time_to,
                         'exam_date' => $examDate,
                         'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
                         'academic_year' => $admission->school_years->school_year,
-                        'exam_sent' => $wasAlreadySent // 👈 This line preserves the current value
+                        'exam_sent' => $wasAlreadySent
                     ]
                 );
 
-                // Now re-fetch updated schedule from DB
+                // Re-fetch updated schedule
                 $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
 
-                // Check if email was already sent
                 if (!$schedule->exam_sent) {
                     $examDateFormatted = date('F d, Y', strtotime($examDate));
                     $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
@@ -631,7 +635,7 @@ class AdmissionsController extends Controller
                     $firstName = $admission->first_name ?? 'Applicant';
                     $lastName = $admission->last_name ?? '';
                     $programName = $admission->academic_program->name ?? 'Your selected course';
-                    $schoolYear = $request->academic_year ?? '2024–2025';
+                    $schoolYear = $admission->school_years->school_year ?? '2024–2025';
                     $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
 
                     if ($email) {
@@ -646,29 +650,16 @@ class AdmissionsController extends Controller
                                 <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
                                 <p>
                                     <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
-                                    <strong>Room Assignment:</strong> {$request->room_assignment}<br>
-                                    <strong>Building:</strong> {$request->building}<br>
+                                    <strong>Room Assignment:</strong> {$room->room_name}<br>
+                                    <strong>Building:</strong> {$building->building_name}<br>
                                     <strong>Time:</strong> {$timeFormatted}<br>
                                     <strong>Testing Center:</strong> SNL – {$testingCenter}
                                 </p>
-                                <p style='font-style: italic; color: #555;'>*ATSNL will utilize all campuses of the University as Testing Centers. Your testing center assignment is computer-generated, be sure to double check your Testing Center to avoid confusion.</p>
-                                <p><strong>Important Reminders:</strong></p>
-                                <ul>
-                                    <li>PRINT your TEST PERMIT and QR Code on a short bond paper.</li>
-                                    <li>BRING a VALID ID (with picture) during the exam. If you do not have a valid ID, bring your PSA birth certificate and certificate of enrollment.</li>
-                                    <li>Give yourself extra time. Arriving early will help you locate the exam room and settle in.</li>
-                                    <li>Only applicants are allowed to enter. Parents/guardians/chaperones are not permitted.</li>
-                                    <li>Minimum health protocols will be observed. Face masks are required.</li>
-                                    <li>READ the General Guidelines of ATSNL {$schoolYear}. <a href='#'>Click here</a>.</li>
-                                    <li>To print your TEST PERMIT <a href='#'>click here</a>.</li>
-                                </ul>
-                                <p>*Follow and regularly check the BulSU Admissions and Orientation Services Facebook Page for announcements. For inquiries, call 919-7800 local 1087 or email <a href='mailto:admissions@bulsu.edu.ph'>admissions@bulsu.edu.ph</a>.</p>
                             </div>
                         ", function ($message) use ($email) {
                             $message->to($email)->subject('SNL Exam Schedule Notification');
                         });
 
-                        // Mark email as sent
                         $schedule->exam_sent = true;
                         $schedule->save();
                     }
@@ -986,5 +977,12 @@ class AdmissionsController extends Controller
                 'error' => $e->getMessage(),
             ], 500);
         }
+    }
+
+
+     public function getByBuilding($id)
+    {
+        $rooms = building_rooms::where('building_id', $id)->get();
+        return response()->json($rooms);
     }
 }
