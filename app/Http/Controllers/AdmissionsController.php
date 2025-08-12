@@ -753,7 +753,7 @@ public function sendExamination(Request $request)
                         // Use room & building names from the models for the email content
                         Mail::html("
                             <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
-                                <h2>SNL University Online Exam Schedule</h2>
+                                <h2>SNL University Exam Schedule</h2>
                                 <p>Good day!</p>
                                 <p>
                                     Dear Mr./Ms. {$lastName}, {$firstName},<br>
