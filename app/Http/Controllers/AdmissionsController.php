@@ -449,7 +449,7 @@ class AdmissionsController extends Controller
         
         <h3 style='color: #2c3e50;'>Dear Mr./Ms. {$lastName}, {$firstName},</h3>
         
-        <p>This is to inform you that we already received your online application to BuBSU - Main Campus.</p>
+        <p>This is to inform you that we already received your online application to SNL - Main Campus.</p>
         <p>Please take note of your applicant number: <strong>{$applicantNumber}</strong></p>
         
         <p>Your appointment schedule for the submission of the required documents will be on <strong>{$appointmentDate}</strong></p>
@@ -558,7 +558,7 @@ class AdmissionsController extends Controller
 
                     <p>Congratulations on completing your application.</p>
 
-                    <p><strong>NOTE:</strong> You are requested to wait for further instructions from the BulSU Admissions and Orientation Office for your Examination schedule.</p>
+                    <p><strong>NOTE:</strong> You are requested to wait for further instructions from the SNL Admissions and Orientation Office for your Examination schedule.</p>
 
                     <p>The schedule of the examination will be sent to your registered email address. Kindly check your email regularly (inbox, spam, or junk).</p>
 
@@ -586,15 +586,25 @@ class AdmissionsController extends Controller
 public function sendExamination(Request $request)
 {
     try {
-        $request->validate([
-            'applicant_ids' => 'required|array',
-            'applicant_ids.*' => 'exists:admissions,id',
-            'exam_date' => 'required|date',
-            'exam_time_from' => 'required|date_format:H:i',
-            'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
-            'building_id' => 'required|exists:campus_buildings,id',
-            'room_id' => 'required|exists:building_rooms,id',
-        ]);
+   $request->validate([
+    'applicant_ids' => 'required|array',
+    'applicant_ids.*' => 'exists:admissions,id',
+    'exam_date' => 'required|date',
+    'exam_time_from' => 'required|date_format:H:i',
+    'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
+    'building_id' => 'required|exists:campus_buildings,id',
+    'room_id' => [
+        'required',
+        'exists:building_rooms,id',
+        function ($attribute, $value, $fail) use ($request) {
+            $room = \App\Models\building_rooms::find($value);
+            if (!$room || $room->building_id != $request->building_id) {
+                $fail('The selected room does not belong to the selected building.');
+            }
+        }
+    ],
+]);
+
 
         $examDate = $request->exam_date;
         $results = [];
@@ -617,7 +627,7 @@ public function sendExamination(Request $request)
             }
 
                 if (!$admission->test_permit_no) {
-                    $prefix = "BULSU-";
+                    $prefix = "SNL-";
                     $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
                     $admission->test_permit_no = $prefix . $paddedId;
                     $admission->save();
@@ -665,7 +675,7 @@ public function sendExamination(Request $request)
                                     Dear Mr./Ms. {$lastName}, {$firstName},<br>
                                     Course: {$programName} at SNL – {$testingCenter}
                                 </p>
-                                <p>Please be informed of your schedule for the Admission Test for Bulacan State University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
+                                <p>Please be informed of your schedule for the Admission Test for SNL University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
                                 <p>
                                     <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
                                     <strong>Room Assignment:</strong> {$room->room_name}<br>
@@ -715,6 +725,7 @@ public function sendExamination(Request $request)
         ]);
     }
 }
+
 
 
  public function reserveSlot(Request $request, $id)
@@ -771,7 +782,7 @@ public function sendExamination(Request $request)
         </head>
         <body>
             <div class="header">
-                <h1>Bulacan State University PRISMS Online Reservation</h1>
+                <h1>SNL University Online Reservation</h1>
                 <p>www.prismsouth.org.au/commons/cn</p>
             </div>
 
@@ -780,7 +791,7 @@ public function sendExamination(Request $request)
             <h3>Name: ' . htmlspecialchars($student_name) . '</h3>
             <p>Course: ' . htmlspecialchars($admission->course->course_name) . '</p>
 
-            <p>In order for the Admission Office to facilitate your pre-enrollment, you must proceed to the BulSU Admission and Registration Office (Main Campus) on your <strong>specified schedule date</strong> from' . $scheduleStart . ' to ' . $scheduleEnd . '..</p>
+            <p>In order for the Admission Office to facilitate your pre-enrollment, you must proceed to the SNL Admission and Registration Office (Main Campus) on your <strong>specified schedule date</strong> from' . $scheduleStart . ' to ' . $scheduleEnd . '..</p>
 
             <p>Please bring the following:</p>
             <ol>
@@ -802,7 +813,7 @@ public function sendExamination(Request $request)
             <h3>RESERVATION SCHEDULE AY ' . $academicYearText . '</h3>
             <p><strong>Your reservation date:</strong> ' . htmlspecialchars($reservation_date) . '</p>
             <p>Please be guided accordingly.</p>
-            <p>Thank you for choosing BulSU!</p>
+            <p>Thank you for choosing SNL!</p>
 
             <div class="footer">
                 <p><em>This is an automatically generated email - please do not reply.</em></p>
