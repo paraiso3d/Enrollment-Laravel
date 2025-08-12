@@ -66,7 +66,7 @@ class AdmissionsController extends Controller
 {
     try {
         $query = admissions::with(['academic_program', 'schoolCampus', 'school_years'])
-            ->where('status', '!=', 'archived');
+            ->where('is_archived', '0');
 
         // Search by keyword
         if ($request->has('search')) {
@@ -832,34 +832,6 @@ public function sendExamination(Request $request)
             $admission->status_by = $rejector->id;
             $admission->save();
 
-            // HTML Email content
-            $htmlContent = "
-            <div style='font-family: Arial, sans-serif; padding: 20px; max-width: 600px; margin: auto; border: 1px solid #ddd;'>
-                <div style='text-align: center; margin-bottom: 20px;'>
-                    <img src='" . asset('storage/logo.png') . "' alt='Institution Logo' style='max-height: 80px;'>
-                </div>
-
-                <h2 style='color: #e53e3e;'>Admission Rejected</h2>
-                <p>Dear <strong>" . e($admission->first_name ?? 'Applicant') . "</strong>,</p>
-                <p>We regret to inform you that your admission application has been <strong>rejected</strong>.</p>
-                <p>If you believe this was an error or need further assistance, please contact our admissions office.</p>
-
-                <br>
-                <p style='color: #718096;'>Thank you for your interest in our institution.</p>
-
-                <hr style='margin: 30px 0;'>
-                <footer style='text-align: center; font-size: 12px; color: #a0aec0;'>
-                    &copy; " . date('Y') . " Your Institution Name. All rights reserved.
-                </footer>
-            </div>
-        ";
-
-            // Send rejection email
-            Mail::html($htmlContent, function ($message) use ($admission) {
-                $message->to($admission->email)
-                    ->subject('Admission Application Status: Rejected');
-            });
-
             return response()->json([
                 'isSuccess' => true,
                 'message' => 'Admission rejected and email sent successfully.',
@@ -874,6 +846,33 @@ public function sendExamination(Request $request)
             return response()->json([
                 'isSuccess' => false,
                 'message' => 'Failed to reject admission.',
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function deleteAdmission($id)
+    {
+        try {
+            $admission = admissions::findOrFail($id);
+
+            // Soft delete the admission
+            $admission->is_archived = 1;
+            $admission->save();
+
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Admission deleted successfully.',
+            ], 200);
+        } catch (ModelNotFoundException $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Admission not found.',
+            ], 404);
+        } catch (Throwable $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to delete admission.',
                 'error' => $e->getMessage(),
             ], 500);
         }
@@ -895,6 +894,7 @@ public function sendExamination(Request $request)
         }
         return null;
     }
+    
 
 
     //Dropdowns
