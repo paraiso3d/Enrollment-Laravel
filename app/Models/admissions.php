@@ -12,7 +12,7 @@ class Admissions extends Model
     protected $table = 'admissions';
 
     protected $fillable = [
-
+        'lrn',
         'applicant_number',
         'academic_year_id',
         'grade_level',

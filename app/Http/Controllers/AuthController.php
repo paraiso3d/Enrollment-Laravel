@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\students;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 use App\Models\accounts;
@@ -91,6 +92,58 @@ class AuthController extends Controller
         ], 500);
     }
 }
+
+
+  public function forgotPassword(Request $request)
+{
+    try {
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        $user = accounts::where('email', $request->email)->first();
+
+        if (!$user) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Email not found.',
+            ], 404);
+        }
+
+        // Generate a temporary password
+        $tempPassword = Str::random(8);
+
+        // Update the user's password with the hashed temporary password
+        $user->update([
+            'password' => Hash::make($tempPassword)
+        ]);
+
+        // Send email directly without Mailable class
+        Mail::html("
+            <h1>Password Reset</h1>
+            <p>Hello {$user->name},</p>
+            <p>Your temporary password is: <strong>{$tempPassword}</strong></p>
+            <p>Please log in and change it immediately.</p>
+        ", function ($message) use ($user) {
+            $message->to($user->email)
+                    ->subject('Your Temporary Password');
+        });
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'A temporary password has been sent to your email.',
+        ], 200);
+
+    } catch (\Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'An error occurred while processing your request.',
+            'error' => $e->getMessage(),
+        ], 500);
+    }
+}
+
+
 
 
     public function logout(Request $request)

@@ -97,59 +97,64 @@ class AdmissionsController extends Controller
 
         $admissions = $query->paginate(10);
 
-        $admissionsData = $admissions->map(function ($admission) {
-            return [
-                'id' => $admission->id,
-                'test_permit_no' => $admission->test_permit_no,
-                'applicant_number' => $admission->applicant_number,
-                'status' => $admission->status,
-                'first_name' => $admission->first_name,
-                'middle_name' => $admission->middle_name,
-                'last_name' => $admission->last_name,
-                'suffix' => $admission->suffix,
-                'full_name' => trim($admission->first_name . ' ' . $admission->middle_name . ' ' . $admission->last_name . ' ' . $admission->suffix),
-                'gender' => $admission->gender,
-                'birthdate' => $admission->birthdate,
-                'birthplace' => $admission->birthplace,
-                'civil_status' => $admission->civil_status,
-                'email' => $admission->email,
-                'contact_number' => $admission->contact_number,
-                'telephone_number' => $admission->telephone_number,
-                'street_address' => $admission->street_address,
-                'province' => $admission->province,
-                'city' => $admission->city,
-                'barangay' => $admission->barangay,
-                'nationality' => $admission->nationality,
-                'religion' => $admission->religion,
-                'ethnic_affiliation' => $admission->ethnic_affiliation,
-                'is_4ps_member' => $admission->is_4ps_member,
-                'is_insurance_member' => $admission->is_insurance_member,
-                'is_vaccinated' => $admission->is_vaccinated,
-                'is_indigenous' => $admission->is_indigenous,
-                'application_type' => $admission->application_type,
-                'lrn' => $admission->lrn,
-                'last_school_attended' => $admission->last_school_attended,
-                'remarks' => $admission->remarks,
-                'good_moral' => $admission->good_moral,
-                'form_137' => $admission->form_137,
-                'form_138' => $admission->form_138,
-                'birth_certificate' => $admission->birth_certificate,
-                'certificate_of_completion' => $admission->certificate_of_completion,
-                'grade_level' => $admission->grade_level,
-                'guardian_name' => $admission->guardian_name,
-                'guardian_contact' => $admission->guardian_contact,
-                'mother_name' => $admission->mother_name,
-                'mother_contact' => $admission->mother_contact,
-                'father_name' => $admission->father_name,
-                'father_contact' => $admission->father_contact,
-                'blood_type' => $admission->blood_type,
+       $admissionsData = $admissions->map(function ($admission) {
+        $storagePath = 'storage/';
 
-                // Related Names
-                'academic_program' => optional($admission->academic_program)->course_name,
-                'school_campus' => optional($admission->schoolCampus)->campus_name,
-                'academic_year' => optional($admission->school_years)->school_year,
-            ];
-        });
+    return [
+        'id' => $admission->id,
+        'test_permit_no' => $admission->test_permit_no,
+        'applicant_number' => $admission->applicant_number,
+        'status' => $admission->status,
+        'first_name' => $admission->first_name,
+        'middle_name' => $admission->middle_name,
+        'last_name' => $admission->last_name,
+        'suffix' => $admission->suffix,
+        'full_name' => trim($admission->first_name . ' ' . $admission->middle_name . ' ' . $admission->last_name . ' ' . $admission->suffix),
+        'gender' => $admission->gender,
+        'birthdate' => $admission->birthdate,
+        'birthplace' => $admission->birthplace,
+        'civil_status' => $admission->civil_status,
+        'email' => $admission->email,
+        'contact_number' => $admission->contact_number,
+        'telephone_number' => $admission->telephone_number,
+        'street_address' => $admission->street_address,
+        'province' => $admission->province,
+        'city' => $admission->city,
+        'barangay' => $admission->barangay,
+        'nationality' => $admission->nationality,
+        'religion' => $admission->religion,
+        'ethnic_affiliation' => $admission->ethnic_affiliation,
+        'is_4ps_member' => $admission->is_4ps_member,
+        'is_insurance_member' => $admission->is_insurance_member,
+        'is_vaccinated' => $admission->is_vaccinated,
+        'is_indigenous' => $admission->is_indigenous,
+        'application_type' => $admission->application_type,
+        'lrn' => $admission->lrn,
+        'last_school_attended' => $admission->last_school_attended,
+        'remarks' => $admission->remarks,
+        
+        // Files as full URLs
+        'good_moral' => $admission->good_moral ? url($storagePath . $admission->good_moral) : null,
+        'form_137' => $admission->form_137 ? url($storagePath . $admission->form_137) : null,
+        'form_138' => $admission->form_138 ? url($storagePath . $admission->form_138) : null,
+        'birth_certificate' => $admission->birth_certificate ? url($storagePath . $admission->birth_certificate) : null,
+        'certificate_of_completion' => $admission->certificate_of_completion ? url($storagePath . $admission->certificate_of_completion) : null,
+
+        'grade_level' => $admission->grade_level,
+        'guardian_name' => $admission->guardian_name,
+        'guardian_contact' => $admission->guardian_contact,
+        'mother_name' => $admission->mother_name,
+        'mother_contact' => $admission->mother_contact,
+        'father_name' => $admission->father_name,
+        'father_contact' => $admission->father_contact,
+        'blood_type' => $admission->blood_type,
+
+        // Related Names
+        'academic_program' => optional($admission->academic_program)->course_name,
+        'school_campus' => optional($admission->schoolCampus)->campus_name,
+        'academic_year' => optional($admission->school_years)->school_year,
+    ];
+});
 
         return response()->json([
             'isSuccess' => true,
@@ -310,7 +315,7 @@ class AdmissionsController extends Controller
     {
         try {
             $validated = $request->validate([
-                'lrn'=> 'required|string|max:20',
+                'lrn'=> 'required|number|max:20',
                 'surname' => 'required|string|max:50',
                 'given_name' => 'required|string|max:50',
                 'middle_name' => 'nullable|string|max:50',
