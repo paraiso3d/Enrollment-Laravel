@@ -15,6 +15,8 @@ use App\Http\Controllers\SubjectsController;
 use App\Http\Controllers\DepartmentsController;
 use App\Http\Controllers\ScheduleController;
 use App\Http\Controllers\CurriculumController;
+use App\Http\Controllers\CampusBuildingsController;
+use App\Http\Controllers\BuildingRoomsController;
 
 
 /*
@@ -184,6 +186,22 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('updatesection/{id}', [SectionsController::class, 'updateSection']);
     Route::post('deletesection/{id}', [SectionsController::class, 'deleteSection']);
 //     Route::post('restoresection/{id}', [SectionsController::class, 'restoreSection']);
+});
+
+// Campus Buildings Management
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('getbuildings', [CampusBuildingsController::class, 'getBuildings']);
+    Route::post('createbuilding', [CampusBuildingsController::class, 'createBuilding']);
+    Route::post('updatebuilding/{id}', [CampusBuildingsController::class, 'updateBuilding']);
+    Route::post('deletebuilding/{id}', [CampusBuildingsController::class, 'deleteBuilding']);
+});
+
+//Rooms Management
+Route::middleware('auth:sanctum')->group(function () {
+    Route::get('getrooms', [BuildingRoomsController::class, 'getRooms']);
+    Route::post('createroom', [BuildingRoomsController::class, 'createRoom']);
+    Route::post('updateroom/{id}', [BuildingRoomsController::class, 'updateRoom']);
+    Route::post('deleteroom/{id}', [BuildingRoomsController::class, 'deleteRoom']);
 });
 
 //Dropdowns

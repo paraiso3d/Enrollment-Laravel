@@ -33,7 +33,7 @@ class SectionsController extends Controller
                 return [
                     'id' => $section->id,
                     'section_name' => $section->section_name,
-                    'capacity'=> $section->max_students,
+                    'students_size'=> $section->students_size,
                     'course' => $section->course ? [
                         'id' => $section->course->id,
                         'name' => $section->course->course_name,
@@ -76,7 +76,7 @@ class SectionsController extends Controller
         // Validate the request data
         $validated = $request->validate([
             'section_name' => 'required|string|max:100',
-            'section_size' => 'required|integer|min:1|max:100',
+            'students_size' => 'required|integer|min:1|max:100',
             'course_id' => 'required|exists:courses,id',
             'campus_id' => 'required|exists:school_campus,id',
         ]);
@@ -96,7 +96,7 @@ class SectionsController extends Controller
 
           $section = sections::create([
             'section_name' => $validated['section_name'],
-            'max_students' => $validated['section_size'],
+            'students_size' => $validated['students_size'],
             'course_id' => $validated['course_id'],
             'campus_id' => $validated['campus_id'],
         ]);
@@ -139,7 +139,7 @@ class SectionsController extends Controller
             'section_name' => 'sometimes|string|max:100',
             'course_id' => 'sometimes|exists:courses,id',
             'campus_id' => 'sometimes|exists:school_campus,id',
-            'section_size' => 'sometimes|integer|min:1|max:100',
+            'students_size' => 'sometimes|integer|min:1|max:100',
         ]);
 
         // Check for duplicates excluding current section
@@ -158,17 +158,17 @@ class SectionsController extends Controller
 
         $currentEnrolled = $section->students()->count();
 
-        if (isset($validated['section_size']) && $validated['section_size'] < $currentEnrolled) {
+        if (isset($validated['students_size']) && $validated['students_size'] < $currentEnrolled) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => "Cannot set section size to {$validated['section_size']}, because there are already {$currentEnrolled} students enrolled.",
+                'message' => "Cannot set section size to {$validated['students_size']}, because there are already {$currentEnrolled} students enrolled.",
             ], 422);
         }
 
         // Map section_size to max_students
-        if (isset($validated['section_size'])) {
-            $validated['max_students'] = $validated['section_size'];
-            unset($validated['section_size']);
+        if (isset($validated['students_size'])) {
+            $validated['students_size'] = $validated['students_size'];
+            unset($validated['students_size']);
         }
 
         $section->update($validated);

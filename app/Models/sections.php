@@ -15,7 +15,7 @@ class sections extends Model
         'school_year_id',
         'campus_id',
         'instructor_id',
-        'max_students',
+        'students_size',
         'is_archive',  
     ];
 
