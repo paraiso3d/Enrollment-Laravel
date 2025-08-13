@@ -733,7 +733,7 @@ public function sendExamination(Request $request)
                 exam_schedules::updateOrCreate(
                     ['admission_id' => $admission->id],
                     [
-                        'academic_program_id' => $admission->academic_program_id,
+                       
                         'test_permit_no' => $admission->test_permit_no,
                         'room_id' => $room->id,
                         'building_id' => $building->id,
@@ -758,7 +758,7 @@ public function sendExamination(Request $request)
                             <p>Good day!</p>
                             <p>
                                 Dear {$admission->last_name}, {$admission->first_name},<br>
-                                Course: {$admission->academic_program->name} at SNL – {$testingCenter}
+                                Course: {$admission->academic_program->course_name} at SNL – {$testingCenter}
                             </p>
                             <p>Please be informed of your schedule for the Admission Test on <strong>{$examDateFormatted}</strong>.</p>
                             <p>
