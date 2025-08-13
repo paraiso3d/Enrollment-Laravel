@@ -727,7 +727,7 @@ public function sendExamination(Request $request)
                         'test_permit_no' => $admission->test_permit_no,
                         'room_id' => $room->id,
                         'building_id' => $building->id,
-                        'campus_id' => $request->school_campus_id,
+                        'campus_id' => $request->campus_id,
                         'course_id' => $request->course_id ?? null,
                         'exam_time_from' => $request->exam_time_from,
                         'exam_time_to' => $request->exam_time_to,
