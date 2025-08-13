@@ -28,7 +28,7 @@ class exam_schedules extends Model
     // Relationships (if needed)
     public function applicant()
     {
-        return $this->belongsTo(admissions::class, 'applicant_id');
+        return $this->belongsTo(admissions::class, 'admission_id');
     }
 
     public function academicProgram()
