@@ -34,17 +34,24 @@ class AdmissionsController extends Controller
 {
 
 
-public function getExamSchedules()
+public function getExamSchedules(Request $request)
 {
     try {
-        $schedules = exam_schedules::with([
+        $perPage = $request->input('per_page', 10); // default 10 per page
+        $page = $request->input('page', 1);
+
+        // Fetch paginated schedules with relationships
+        $schedulesQuery = exam_schedules::with([
             'applicant:id,first_name,last_name,email,contact_number',
             'room:id,room_name',
             'building:id,building_name',
             'campus:id,campus_name'
-        ])->get();
+        ]);
 
-        $grouped = $schedules->groupBy('campus_id')->map(function ($campusSchedules, $campusId) {
+        $schedules = $schedulesQuery->paginate($perPage, ['*'], 'page', $page);
+
+        // Group the items on this page
+        $grouped = $schedules->getCollection()->groupBy('campus_id')->map(function ($campusSchedules, $campusId) {
             $campusName = optional($campusSchedules->first()->campus)->campus_name ?? 'Unknown Campus';
 
             $buildings = $campusSchedules->groupBy('building_id')->map(function ($buildingSchedules, $buildingId) {
@@ -68,7 +75,6 @@ public function getExamSchedules()
                             'exam_time_to' => $schedule->exam_time_to,
                             'exam_score' => $schedule->exam_score,
                             'exam_status' => $schedule->exam_status,
-
                         ];
                     })->values();
 
@@ -93,11 +99,19 @@ public function getExamSchedules()
             ];
         })->values();
 
+        // Return paginated data with meta
         return response()->json([
             'isSuccess' => true,
             'message' => 'Exam schedules grouped by campus, building, and room.',
             'data' => $grouped,
+            'data' => [
+                'current_page' => $schedules->currentPage(),
+                'per_page' => $schedules->perPage(),
+                'total' => $schedules->total(),
+                'last_page' => $schedules->lastPage(),
+            ]
         ]);
+
     } catch (\Exception $e) {
         return response()->json([
             'isSuccess' => false,
@@ -106,6 +120,7 @@ public function getExamSchedules()
         ], 500);
     }
 }
+
 
 
 
