@@ -66,8 +66,7 @@ public function getExamSchedules()
                             'exam_date' => $schedule->exam_date,
                             'exam_time_from' => $schedule->exam_time_from,
                             'exam_time_to' => $schedule->exam_time_to,
-                            'exam_score' => $schedule->exam_score,
-                            'exam_status' => $schedule->exam_status,
+                           
 
                         ];
                     })->values();
