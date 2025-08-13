@@ -66,6 +66,9 @@ public function getExamSchedules()
                             'exam_date' => $schedule->exam_date,
                             'exam_time_from' => $schedule->exam_time_from,
                             'exam_time_to' => $schedule->exam_time_to,
+                            'exam_score' => $schedule->exam_score,
+                            'exam_status' => $schedule->exam_status,
+
                         ];
                     })->values();
 
@@ -926,47 +929,46 @@ public function sendExamination(Request $request)
 }
 
 
-   public function inputExamScores(Request $request, $id)
+  public function inputExamScores(Request $request)
 {
-    try {
-        $admission = admissions::findOrFail($id);
+    $validated = $request->validate([
+        'scores' => 'required|array',
+        'scores.*.schedule_id' => 'required|exists:exam_schedules,id',
+        'scores.*.exam_score' => 'required|numeric|min:0|max:100',
+    ]);
 
-        $validated = $request->validate([
-            'exam_score' => 'required|numeric|min:0|max:100',
-            'remarks' => 'nullable|string|max:255',
-        ]);
+    $results = [];
+    $passingScore = 75;
 
-        // Save or update exam score and remarks
-        $admission->exam_score = $validated['exam_score'];
-        $admission->remarks = $validated['remarks'] ?? null;
+    foreach ($validated['scores'] as $item) {
+        try {
+            $schedule = exam_schedules::findOrFail($item['schedule_id']);
+            $schedule->exam_score = $item['exam_score'];
+            $schedule->exam_status = ($item['exam_score'] >= $passingScore) ? 'passed' : 'reconsider';
+            $schedule->save();
 
-        // Auto-calc pass or fail based on average or threshold
-        // Let's say passing is 75 or higher
-        $passingScore = 75;
-
-        $admission->exam_status = ($validated['exam_score'] >= $passingScore) ? 'passed' : 'reconsider';
-
-        $admission->save();
-
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Exam score saved successfully.',
-            'admission' => $admission,
-        ]);
-    } catch (ValidationException $ve) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Validation failed.',
-            'errors' => $ve->errors(),
-        ], 422);
-    } catch (\Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to save exam score.',
-            'error' => $e->getMessage(),
-        ], 500);
+            $results[] = [
+                'schedule_id' => $schedule->id,
+                'status' => 'success',
+                'exam_score' => $schedule->exam_score,
+                'exam_status' => $schedule->exam_status,
+            ];
+        } catch (\Exception $e) {
+            $results[] = [
+                'schedule_id' => $item['schedule_id'],
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
     }
+
+    return response()->json([
+        'isSuccess' => true,
+        'message' => 'Bulk exam scores processed.',
+        'results' => $results,
+    ]);
 }
+
 
 
 
