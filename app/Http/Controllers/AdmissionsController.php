@@ -104,7 +104,7 @@ public function getExamSchedules(Request $request)
             'isSuccess' => true,
             'message' => 'Exam schedules grouped by campus, building, and room.',
             'data' => $grouped,
-            'data' => [
+            'meta' => [
                 'current_page' => $schedules->currentPage(),
                 'per_page' => $schedules->perPage(),
                 'total' => $schedules->total(),
