@@ -946,18 +946,22 @@ public function sendExamination(Request $request)
 
 public function inputExamScores(Request $request)
 {
-    $validated = $request->validate([
-        'scores' => 'required|array',
-        'scores.*.id' => 'required|exists:exam_schedules,id',
-        'scores.*.exam_score' => 'required|numeric|min:0|max:100',
-    ]);
-
+    $data = $request->all(); // expects an array of {id, exam_score}
     $results = [];
     $passingScore = 75;
 
-    foreach ($validated['scores'] as $item) {
+    foreach ($data as $item) {
         try {
-            $schedule = exam_schedules::findOrFail($item['id']); // <- corrected
+            // Validate each item
+            if (!isset($item['id']) || !isset($item['exam_score'])) {
+                throw new \Exception("Both id and exam_score are required");
+            }
+
+            if (!is_numeric($item['exam_score']) || $item['exam_score'] < 0 || $item['exam_score'] > 100) {
+                throw new \Exception("Invalid score for schedule ID {$item['id']}");
+            }
+
+            $schedule = exam_schedules::findOrFail($item['id']);
             $schedule->exam_score = $item['exam_score'];
             $schedule->exam_status = ($item['exam_score'] >= $passingScore) ? 'passed' : 'reconsider';
             $schedule->save();
@@ -970,7 +974,7 @@ public function inputExamScores(Request $request)
             ];
         } catch (\Exception $e) {
             $results[] = [
-                'schedule_id' => $item['id'],
+                'schedule_id' => $item['id'] ?? null,
                 'status' => 'failed',
                 'message' => $e->getMessage(),
             ];
