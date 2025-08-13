@@ -1141,22 +1141,43 @@ private function saveFileToPublic(Request $request, $field, $prefix)
         return response()->json($rooms);
     }
 
-    public function getBuildingDropdown()
-    {
-        try {
-            $buildings = campus_buildings::select('id', 'building_name')->get();
+   public function getBuildingDropdown(Request $request)
+{
+    try {
+        // Validate admission_id from the request
+        $request->validate([
+            'admission_id' => 'required|exists:admissions,id'
+        ]);
 
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Campus buildings fetched successfully.',
-                'buildings' => $buildings
-            ]);
-        } catch (Exception $e) {
+        // Step 1: Find the admission record
+        $admission = admissions::select('school_campus_id')
+            ->where('id', $request->admission_id)
+            ->first();
+
+        if (!$admission) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to fetch campus buildings.',
-                'error' => $e->getMessage(),
-            ], 500);
+                'message' => 'Admission record not found.'
+            ], 404);
         }
+
+        // Step 2: Get buildings for that campus
+        $buildings = campus_buildings::select('id', 'building_name')
+            ->where('campus_id', $admission->school_campus_id)
+            ->get();
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Campus buildings fetched successfully.',
+            'buildings' => $buildings
+        ]);
+
+    } catch (Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to fetch campus buildings.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 }
