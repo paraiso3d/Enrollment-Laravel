@@ -988,6 +988,22 @@ public function inputExamScores(Request $request)
     ]);
 }
 
+    public function getExamScoreSummary()
+{
+    $summary = exam_schedules::selectRaw("
+        SUM(CASE WHEN exam_status = 'passed' THEN 1 ELSE 0 END) as passed,
+        SUM(CASE WHEN exam_status = 'reconsider' THEN 1 ELSE 0 END) as reconsider
+    ")->first();
+
+    return response()->json([
+        'isSuccess' => true,
+        'message' => 'Exam scores summary retrieved.',
+        'summary' => [
+            'passed' => $summary->passed,
+            'reconsider' => $summary->reconsider,
+        ]
+    ]);
+}
 
 
 
