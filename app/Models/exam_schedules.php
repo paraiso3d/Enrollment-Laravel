@@ -9,18 +9,20 @@ class exam_schedules extends Model
 {
     use HasFactory;
 
+    protected $table = 'exam_schedules';
     protected $fillable = [
-        'applicant_id',
+        'admission_id',
         'academic_program_id',
         'test_permit_no',
         'room_id',
         'building_id',
-        'testing_center',
+        'campus_id',
         'exam_date',
         'exam_time_from',
         'exam_time_to',
         'academic_year',
-        'exam_sent'
+        'exam_sent',
+        'exam_score'
     ];
 
     // Relationships (if needed)

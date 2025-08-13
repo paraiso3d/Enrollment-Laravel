@@ -209,14 +209,15 @@ Route::middleware('auth:sanctum')->group(function () {
 //Dropdowns
 Route::prefix('dropdown')->group(function () {
     Route::get('getstatuses', [AdmissionsController::class, 'getAdmissionStatuses']);
-    Route::get('school-campuses', [AdmissionsController::class, 'getSchoolCampusesDropdown']);
     Route::get('academic-programs', [AdmissionsController::class, 'getAcademicProgramsDropdown']);
     Route::get('academic-years', [AdmissionsController::class, 'getAcademicYearsDropdown']);
     Route::get('courses', [SectionsController::class, 'getCoursesDropdown']);
     Route::get('sections', [SectionsController::class, 'getSectionsDropdown']);
     Route::get('subjects', [SubjectsController::class, 'getSubjectsDropdown']);
+    Route::get('campuses', [AdmissionsController::class, 'getCampusDropdown']);
     Route::get('rooms/{id}', [AdmissionsController::class, 'getByBuilding']);
     Route::get('buildings', [AdmissionsController::class, 'getBuildingDropdown']);
+    // Route::post('buildingsbycampus/{id}', [AdmissionsController::class, 'getBuildingbyCampus']);
 
 
 

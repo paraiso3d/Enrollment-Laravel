@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Storage;
 use Throwable;
 use Exception;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 
@@ -668,99 +669,95 @@ class AdmissionsController extends Controller
 
 
 
-public function sendExamination(Request $request)
-{
-    try {
-        $request->validate([
-            'applicant_ids' => 'required|array',
-            'applicant_ids.*' => 'exists:admissions,id',
-            'exam_date' => 'required|date',
-            'exam_time_from' => 'required|date_format:H:i',
-            'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
-            'building_id' => 'required|exists:campus_buildings,id',
-            'room_id' => [
-                'required',
-                'exists:building_rooms,id',
-                function ($attribute, $value, $fail) use ($request) {
-                    $room = \App\Models\building_rooms::find($value);
-                    if (!$room || $room->building_id != $request->building_id) {
-                        $fail('The selected room does not belong to the selected building.');
+    public function sendExamination(Request $request)
+    {
+        try {
+            $request->validate([
+                'admission_ids' => 'required|array',
+                'admission_ids.*' => 'exists:admissions,id',
+                'exam_date' => 'required|date',
+                'exam_time_from' => 'required|date_format:H:i',
+                'exam_time_to' => 'required|date_format:H:i|after:exam_time_from',
+                'building_id' => 'required|exists:campus_buildings,id',
+                'room_id' => [
+                    'required',
+                    'exists:building_rooms,id',
+                    function ($attribute, $value, $fail) use ($request) {
+                        $room = \App\Models\building_rooms::find($value);
+                        if (!$room || $room->building_id != $request->building_id) {
+                            $fail('The selected room does not belong to the selected building.');
+                        }
                     }
-                }
-            ],
-        ]);
+                ],
+                'course_id' => 'nullable|exists:courses,id', // NEW
+            ]);
 
-        $examDate = $request->exam_date;
-        $results = [];
+            $examDate = $request->exam_date;
+            $results = [];
 
-        // Get building & room models for email content and validation
-        $building = campus_buildings::find($request->building_id);
-        $room = building_rooms::find($request->room_id);
+            // Get building & room
+            $building = campus_buildings::find($request->building_id);
+            $room = building_rooms::find($request->room_id);
 
-        foreach ($request->applicant_ids as $id) {
-            try {
-                $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
+            foreach ($request->admission_ids as $id) {
+                try {
+                    $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
 
-                if (strtolower($admission->status) === 'rejected') {
-                    $results[] = [
-                        'applicant_id' => $id,
-                        'status' => 'skipped',
-                        'message' => 'Applicant is rejected and will not be scheduled.',
-                    ];
-                    continue;
-                }
+                    // Skip rejected
+                    if (strtolower($admission->status) === 'rejected') {
+                        $results[] = [
+                            'admission_id' => $id,
+                            'status' => 'skipped',
+                            'message' => 'Applicant is rejected and will not be scheduled.',
+                        ];
+                        continue;
+                    }
 
-                if (!$admission->test_permit_no) {
-                    $prefix = "SNL-";
-                    $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
-                    $admission->test_permit_no = $prefix . $paddedId;
-                    $admission->save();
-                }
+                    // Generate permit if missing
+                    if (!$admission->test_permit_no) {
+                        $prefix = "SNL-";
+                        $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
+                        $admission->test_permit_no = $prefix . $paddedId;
+                        $admission->save();
+                    }
 
-                // Retrieve existing schedule first
-                $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
-                $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
+                    // Get existing schedule
+                    $schedule = exam_schedules::where('admission_id', $admission->id)->first();
+                    $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
 
-                // Update or create the schedule, now with room_id and building_id foreign keys
-                exam_schedules::updateOrCreate(
-                    ['applicant_id' => $admission->id],
-                    [
-                        'test_permit_no' => $admission->test_permit_no,
-                        'room_id' => $room->id,
-                        'building_id' => $building->id,
-                        'exam_time_from' => $request->exam_time_from,
-                        'exam_time_to' => $request->exam_time_to,
-                        'exam_date' => $examDate,
-                        'testing_center' => $admission->schoolCampus->campus_name ?? 'SNL – Main Campus',
-                        'academic_year' => $admission->school_years->school_year,
-                        'exam_sent' => $wasAlreadySent,
-                    ]
-                );
+                    // Create or update schedule
+                    exam_schedules::updateOrCreate(
+                        ['admission_id' => $admission->id],
+                        [
+                            'academic_program_id' => $admission->academic_program_id,
+                            'test_permit_no' => $admission->test_permit_no,
+                            'room_id' => $room->id,
+                            'building_id' => $building->id,
+                            'campus_id' => $admission->school_campus_id,
+                            'course_id' => $request->course_id ?? null, // NEW
+                            'exam_time_from' => $request->exam_time_from,
+                            'exam_time_to' => $request->exam_time_to,
+                            'exam_date' => $examDate,
+                            'academic_year' => $admission->school_years->school_year,
+                            'exam_sent' => $wasAlreadySent,
+                        ]
+                    );
 
-                // Re-fetch updated schedule
-                $schedule = exam_schedules::where('applicant_id', $admission->id)->first();
+                    // Send email if not yet sent
+                    if (!$wasAlreadySent && $admission->email) {
+                        $examDateFormatted = date('F d, Y', strtotime($examDate));
+                        $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
+                        $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
 
-                if (!$schedule->exam_sent) {
-                    $examDateFormatted = date('F d, Y', strtotime($examDate));
-                    $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
-                    $email = $admission->email;
-                    $firstName = $admission->first_name ?? 'Applicant';
-                    $lastName = $admission->last_name ?? '';
-                    $programName = $admission->academic_program->name ?? 'Your selected course';
-                    $schoolYear = $admission->school_years->school_year ?? '2024–2025';
-                    $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
-
-                    if ($email) {
-                        // Use room & building names from the models for the email content
                         Mail::html("
                             <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
                                 <h2>SNL University Exam Schedule</h2>
                                 <p>Good day!</p>
                                 <p>
-                                    Dear Mr./Ms. {$lastName}, {$firstName},<br>
-                                    Course: {$programName} at SNL – {$testingCenter}
+                                    Dear {$admission->last_name}, {$admission->first_name},<br>
+                                    Course: {$admission->academic_program->name} at SNL – {$testingCenter}
                                 </p>
-                                <p>Please be informed of your schedule for the Admission Test for SNL University (ATSNL {$schoolYear}) on <strong>{$examDateFormatted}</strong>.</p>
+                                <p>Please be informed of your schedule for the Admission Test on <strong>{$examDateFormatted}</strong>.</p>
                                 <p>
                                     <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
                                     <strong>Room Assignment:</strong> {$room->room_name}<br>
@@ -769,47 +766,46 @@ public function sendExamination(Request $request)
                                     <strong>Testing Center:</strong> SNL – {$testingCenter}
                                 </p>
                             </div>
-                        ", function ($message) use ($email) {
-                            $message->to($email)->subject('SNL Exam Schedule Notification');
+                        ", function ($message) use ($admission) {
+                            $message->to($admission->email)->subject('SNL Exam Schedule Notification');
                         });
 
-                        $schedule->exam_sent = true;
-                        $schedule->save();
-                    }
+                        exam_schedules::where('admission_id', $admission->id)->update(['exam_sent' => true]);
 
+                        $results[] = [
+                            'admission_id' => $id,
+                            'status' => 'exam_sent',
+                        ];
+                    } else {
+                        $results[] = [
+                            'admission_id' => $id,
+                            'status' => 'skipped',
+                            'message' => 'Email already sent previously.',
+                        ];
+                    }
+                } catch (\Exception $ex) {
                     $results[] = [
-                        'applicant_id' => $id,
-                        'status' => 'exam_sent',
-                    ];
-                } else {
-                    $results[] = [
-                        'applicant_id' => $id,
-                        'status' => 'skipped',
-                        'message' => 'Email already sent previously.',
+                        'admission_id' => $id,
+                        'status' => 'error',
+                        'message' => $ex->getMessage(),
                     ];
                 }
-            } catch (\Exception $ex) {
-                $results[] = [
-                    'applicant_id' => $id,
-                    'status' => 'error',
-                    'message' => $ex->getMessage(),
-                ];
             }
-        }
 
-        return response()->json([
-            'isSuccess' => true,
-            'message' => 'Bulk exam scheduling completed.',
-            'results' => $results,
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'isSuccess' => false,
-            'message' => 'Failed to send exam schedules.',
-            'error' => $e->getMessage(),
-        ]);
+            return response()->json([
+                'isSuccess' => true,
+                'message' => 'Bulk exam scheduling completed.',
+                'results' => $results,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'isSuccess' => false,
+                'message' => 'Failed to send exam schedules.',
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
-}
+
 
 
 
@@ -1096,26 +1092,6 @@ private function saveFileToPublic(Request $request, $field, $prefix)
     }
 
     
-
-    public function getSchoolCampusesDropdown()
-    {
-        try {
-            $campuses = school_campus::select('id', 'campus_name')->get();
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'School campuses fetched successfully.',
-                'campuses' => $campuses
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to fetch school campuses.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
-    }
-
     public function getAcademicYearsDropdown()
     {
         try {
@@ -1136,69 +1112,68 @@ private function saveFileToPublic(Request $request, $field, $prefix)
     }
 
 
-     public function getByBuilding($id)
-    {
-        $rooms = building_rooms::where('building_id', $id)->get();
-        return response()->json($rooms);
-    }
+// Get campuses for first dropdown
+        public function getCampusDropdown()
+        {
+            try {
+                $campuses = school_campus::select('id', 'campus_name')->get();
 
-
-     public function getBuildingDropdown()
-    {
-        try {
-            $buildings = campus_buildings::select('id', 'building_name')->get();
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Campus buildings fetched successfully.',
-                'buildings' => $buildings
-            ]);
-        } catch (Exception $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to fetch campus buildings.',
-                'error' => $e->getMessage(),
-            ], 500);
+                return response()->json([
+                    'isSuccess' => true,
+                    'message' => 'Campuses fetched successfully.',
+                    'campuses' => $campuses
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Failed to fetch campuses.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
         }
-    }
 
-//    public function getBuildingDropdown(Request $request)
+        // Get buildings for selected campus
+        public function getBuildingsByCampus($campusId)
+        {
+            try {
+                $buildings = campus_buildings::where('campus_id', $campusId)
+                    ->select('id', 'building_name')
+                    ->get();
+
+                return response()->json([
+                    'isSuccess' => true,
+                    'message' => 'Buildings fetched successfully.',
+                    'buildings' => $buildings
+                ]);
+            } catch (\Exception $e) {
+                return response()->json([
+                    'isSuccess' => false,
+                    'message' => 'Failed to fetch buildings.',
+                    'error' => $e->getMessage(),
+                ], 500);
+            }
+        }
+
+        // Existing rooms function (unchanged)
+        public function getByBuilding($id)
+        {
+            $rooms = building_rooms::where('building_id', $id)->get();
+            return response()->json($rooms);
+        }
+
+
+//    public function getBuildingsByAdmission($admissionId)
 // {
-//     try {
-//         // Validate admission_id from the request
-//         $request->validate([
-//             'admission_id' => 'required|exists:admissions,id'
-//         ]);
+//     $admission = admissions::select('school_campus_id')->findOrFail($admissionId);
 
-//         // Step 1: Find the admission record
-//         $admission = admissions::select('school_campus_id')
-//             ->where('id', $request->admission_id)
-//             ->first();
+//     $buildings = campus_buildings::where('campus_id', $admission->school_campus_id)
+//         ->select('id', 'building_name')
+//         ->get();
 
-//         if (!$admission) {
-//             return response()->json([
-//                 'isSuccess' => false,
-//                 'message' => 'Admission record not found.'
-//             ], 404);
-//         }
-
-//         // Step 2: Get buildings for that campus
-//         $buildings = campus_buildings::select('id', 'building_name')
-//             ->where('campus_id', $admission->school_campus_id)
-//             ->get();
-
-//         return response()->json([
-//             'isSuccess' => true,
-//             'message' => 'Campus buildings fetched successfully.',
-//             'buildings' => $buildings
-//         ]);
-
-//     } catch (Exception $e) {
-//         return response()->json([
-//             'isSuccess' => false,
-//             'message' => 'Failed to fetch campus buildings.',
-//             'error' => $e->getMessage(),
-//         ], 500);
-//     }
+//     return response()->json([
+//         'isSuccess' => true,
+//         'message' => 'Buildings fetched successfully.',
+//         'buildings' => $buildings
+//     ]);
 // }
 }
