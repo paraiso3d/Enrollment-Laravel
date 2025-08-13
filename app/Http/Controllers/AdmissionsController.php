@@ -690,7 +690,7 @@ public function sendExamination(Request $request)
                         }
                     }
                 ],
-                'course_id' => 'nullable|exists:courses,id',
+                'campus_id' => 'nullable|exists:school_campus,id',
             ]);
         } catch (ValidationException $e) {
             return response()->json([
