@@ -216,7 +216,7 @@ Route::prefix('dropdown')->group(function () {
     Route::get('sections', [SectionsController::class, 'getSectionsDropdown']);
     Route::get('subjects', [SubjectsController::class, 'getSubjectsDropdown']);
     Route::get('rooms/{id}', [AdmissionsController::class, 'getByBuilding']);
-    Route::post('buildings', [AdmissionsController::class, 'getBuildingDropdown']);
+    Route::get('buildings', [AdmissionsController::class, 'getBuildingDropdown']);
 
 
 
