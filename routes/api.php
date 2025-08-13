@@ -94,7 +94,7 @@ Route::post('sendcustomemail', [AdmissionsController::class, 'sendCustomEmail'])
 Route::post('sendexamination', [AdmissionsController::class, 'sendExamination'])->middleware('auth:sanctum');
 Route::post('deleteadmission/{id}', [AdmissionsController::class, 'deleteAdmission']);
 Route::post('/reserve-slot/{id}', [AdmissionsController::class, 'reserveSlot']);
-Route::post("examscores", [AdmissionsController::class, 'inputExamScores'])->middleware('auth:sanctum');
+Route::post("examscores", [AdmissionsController::class, 'inputExamScores']);
 
 Route::middleware('auth:sanctum')->group(function () {
 Route::post('sendemail', [AdmissionsController::class, 'sendManualAdmissionEmail'])->middleware('auth:sanctum');

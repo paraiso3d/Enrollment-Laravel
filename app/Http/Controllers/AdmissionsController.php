@@ -944,11 +944,11 @@ public function sendExamination(Request $request)
 }
 
 
-  public function inputExamScores(Request $request)
+public function inputExamScores(Request $request)
 {
     $validated = $request->validate([
         'scores' => 'required|array',
-        'scores.*.schedule_id' => 'required|exists:exam_schedules,id',
+        'scores.*.id' => 'required|exists:exam_schedules,id',
         'scores.*.exam_score' => 'required|numeric|min:0|max:100',
     ]);
 
@@ -957,7 +957,7 @@ public function sendExamination(Request $request)
 
     foreach ($validated['scores'] as $item) {
         try {
-            $schedule = exam_schedules::findOrFail($item['schedule_id']);
+            $schedule = exam_schedules::findOrFail($item['id']); // <- corrected
             $schedule->exam_score = $item['exam_score'];
             $schedule->exam_status = ($item['exam_score'] >= $passingScore) ? 'passed' : 'reconsider';
             $schedule->save();
@@ -970,7 +970,7 @@ public function sendExamination(Request $request)
             ];
         } catch (\Exception $e) {
             $results[] = [
-                'schedule_id' => $item['schedule_id'],
+                'schedule_id' => $item['id'],
                 'status' => 'failed',
                 'message' => $e->getMessage(),
             ];

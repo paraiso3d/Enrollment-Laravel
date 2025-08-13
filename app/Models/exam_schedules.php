@@ -22,7 +22,8 @@ class exam_schedules extends Model
         'exam_time_to',
         'academic_year',
         'exam_sent',
-        'exam_score'
+        'exam_score',
+        'exam_status'
     ];
 
     // Relationships (if needed)
