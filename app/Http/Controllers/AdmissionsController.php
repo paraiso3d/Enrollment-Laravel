@@ -669,8 +669,9 @@ class AdmissionsController extends Controller
 
 
 
-    public function sendExamination(Request $request)
-    {
+public function sendExamination(Request $request)
+{
+    try {
         try {
             $request->validate([
                 'admission_ids' => 'required|array',
@@ -689,122 +690,126 @@ class AdmissionsController extends Controller
                         }
                     }
                 ],
-                'course_id' => 'nullable|exists:courses,id', // NEW
+                'course_id' => 'nullable|exists:courses,id',
             ]);
-
-            $examDate = $request->exam_date;
-            $results = [];
-
-            // Get building & room
-            $building = campus_buildings::find($request->building_id);
-            $room = building_rooms::find($request->room_id);
-
-            foreach ($request->admission_ids as $id) {
-                try {
-                    $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
-
-                    // Skip rejected
-                    if (strtolower($admission->status) === 'rejected') {
-                        $results[] = [
-                            'admission_id' => $id,
-                            'status' => 'skipped',
-                            'message' => 'Applicant is rejected and will not be scheduled.',
-                        ];
-                        continue;
-                    }
-
-                    // Generate permit if missing
-                    if (!$admission->test_permit_no) {
-                        $prefix = "SNL-";
-                        $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
-                        $admission->test_permit_no = $prefix . $paddedId;
-                        $admission->save();
-                    }
-
-                    // Get existing schedule
-                    $schedule = exam_schedules::where('admission_id', $admission->id)->first();
-                    $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
-
-                    // Create or update schedule
-                    exam_schedules::updateOrCreate(
-                        ['admission_id' => $admission->id],
-                        [
-                            'academic_program_id' => $admission->academic_program_id,
-                            'test_permit_no' => $admission->test_permit_no,
-                            'room_id' => $room->id,
-                            'building_id' => $building->id,
-                            'campus_id' => $admission->school_campus_id,
-                            'course_id' => $request->course_id ?? null, // NEW
-                            'exam_time_from' => $request->exam_time_from,
-                            'exam_time_to' => $request->exam_time_to,
-                            'exam_date' => $examDate,
-                            'academic_year' => $admission->school_years->school_year,
-                            'exam_sent' => $wasAlreadySent,
-                        ]
-                    );
-
-                    // Send email if not yet sent
-                    if (!$wasAlreadySent && $admission->email) {
-                        $examDateFormatted = date('F d, Y', strtotime($examDate));
-                        $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
-                        $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
-
-                        Mail::html("
-                            <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
-                                <h2>SNL University Exam Schedule</h2>
-                                <p>Good day!</p>
-                                <p>
-                                    Dear {$admission->last_name}, {$admission->first_name},<br>
-                                    Course: {$admission->academic_program->name} at SNL – {$testingCenter}
-                                </p>
-                                <p>Please be informed of your schedule for the Admission Test on <strong>{$examDateFormatted}</strong>.</p>
-                                <p>
-                                    <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
-                                    <strong>Room Assignment:</strong> {$room->room_name}<br>
-                                    <strong>Building:</strong> {$building->building_name}<br>
-                                    <strong>Time:</strong> {$timeFormatted}<br>
-                                    <strong>Testing Center:</strong> SNL – {$testingCenter}
-                                </p>
-                            </div>
-                        ", function ($message) use ($admission) {
-                            $message->to($admission->email)->subject('SNL Exam Schedule Notification');
-                        });
-
-                        exam_schedules::where('admission_id', $admission->id)->update(['exam_sent' => true]);
-
-                        $results[] = [
-                            'admission_id' => $id,
-                            'status' => 'exam_sent',
-                        ];
-                    } else {
-                        $results[] = [
-                            'admission_id' => $id,
-                            'status' => 'skipped',
-                            'message' => 'Email already sent previously.',
-                        ];
-                    }
-                } catch (\Exception $ex) {
-                    $results[] = [
-                        'admission_id' => $id,
-                        'status' => 'error',
-                        'message' => $ex->getMessage(),
-                    ];
-                }
-            }
-
-            return response()->json([
-                'isSuccess' => true,
-                'message' => 'Bulk exam scheduling completed.',
-                'results' => $results,
-            ]);
-        } catch (\Exception $e) {
+        } catch (ValidationException $e) {
             return response()->json([
                 'isSuccess' => false,
-                'message' => 'Failed to send exam schedules.',
-                'error' => $e->getMessage(),
-            ]);
+                'message' => 'Validation failed.',
+                'errors' => $e->errors() // shows all failed fields with reasons
+            ], 422);
         }
+
+        // --- your existing logic below ---
+        $examDate = $request->exam_date;
+        $results = [];
+
+        $building = campus_buildings::find($request->building_id);
+        $room = building_rooms::find($request->room_id);
+
+        foreach ($request->admission_ids as $id) {
+            try {
+                $admission = admissions::with(['academic_program', 'schoolCampus', 'school_years'])->findOrFail($id);
+
+                if (strtolower($admission->status) === 'rejected') {
+                    $results[] = [
+                        'admission_id' => $id,
+                        'status' => 'skipped',
+                        'message' => 'Applicant is rejected and will not be scheduled.',
+                    ];
+                    continue;
+                }
+
+                if (!$admission->test_permit_no) {
+                    $prefix = "SNL-";
+                    $paddedId = str_pad($admission->id, 5, '0', STR_PAD_LEFT);
+                    $admission->test_permit_no = $prefix . $paddedId;
+                    $admission->save();
+                }
+
+                $schedule = exam_schedules::where('admission_id', $admission->id)->first();
+                $wasAlreadySent = $schedule ? $schedule->exam_sent : false;
+
+                exam_schedules::updateOrCreate(
+                    ['admission_id' => $admission->id],
+                    [
+                        'academic_program_id' => $admission->academic_program_id,
+                        'test_permit_no' => $admission->test_permit_no,
+                        'room_id' => $room->id,
+                        'building_id' => $building->id,
+                        'campus_id' => $admission->school_campus_id,
+                        'course_id' => $request->course_id ?? null,
+                        'exam_time_from' => $request->exam_time_from,
+                        'exam_time_to' => $request->exam_time_to,
+                        'exam_date' => $examDate,
+                        'academic_year' => $admission->school_years->school_year,
+                        'exam_sent' => $wasAlreadySent,
+                    ]
+                );
+
+                if (!$wasAlreadySent && $admission->email) {
+                    $examDateFormatted = date('F d, Y', strtotime($examDate));
+                    $timeFormatted = date('h:i A', strtotime($request->exam_time_from)) . ' – ' . date('h:i A', strtotime($request->exam_time_to));
+                    $testingCenter = $admission->schoolCampus->campus_name ?? 'SNL – Main Campus';
+
+                    Mail::html("
+                        <div style='font-family: Arial, sans-serif; max-width: 700px; margin: auto;'>
+                            <h2>SNL University Exam Schedule</h2>
+                            <p>Good day!</p>
+                            <p>
+                                Dear {$admission->last_name}, {$admission->first_name},<br>
+                                Course: {$admission->academic_program->name} at SNL – {$testingCenter}
+                            </p>
+                            <p>Please be informed of your schedule for the Admission Test on <strong>{$examDateFormatted}</strong>.</p>
+                            <p>
+                                <strong>Test Permit No:</strong> {$admission->test_permit_no}<br>
+                                <strong>Room Assignment:</strong> {$room->room_name}<br>
+                                <strong>Building:</strong> {$building->building_name}<br>
+                                <strong>Time:</strong> {$timeFormatted}<br>
+                                <strong>Testing Center:</strong> SNL – {$testingCenter}
+                            </p>
+                        </div>
+                    ", function ($message) use ($admission) {
+                        $message->to($admission->email)->subject('SNL Exam Schedule Notification');
+                    });
+
+                    exam_schedules::where('admission_id', $admission->id)->update(['exam_sent' => true]);
+
+                    $results[] = [
+                        'admission_id' => $id,
+                        'status' => 'exam_sent',
+                    ];
+                } else {
+                    $results[] = [
+                        'admission_id' => $id,
+                        'status' => 'skipped',
+                        'message' => 'Email already sent previously.',
+                    ];
+                }
+            } catch (\Exception $ex) {
+                $results[] = [
+                    'admission_id' => $id,
+                    'status' => 'error',
+                    'message' => $ex->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'isSuccess' => true,
+            'message' => 'Bulk exam scheduling completed.',
+            'results' => $results,
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to send exam schedules.',
+            'error' => $e->getMessage(),
+        ]);
     }
+}
+
 
 
 
