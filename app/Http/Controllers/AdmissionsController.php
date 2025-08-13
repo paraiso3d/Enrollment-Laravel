@@ -34,43 +34,30 @@ class AdmissionsController extends Controller
 {
 
 
-  public function getExamSchedules()
+public function getExamSchedules()
 {
     try {
         $schedules = exam_schedules::with([
-            'applicant' => function($query) {
-                $query->select([
-                    'id',
-                    'first_name', 
-                    'last_name', 
-                    'email', 
-                    'contact_number',
-                ]);
-            },
-            'room' => function($query) {
-                $query->select(['id', 'room_name']);
-            },
-            'building' => function($query) {
-                $query->select(['id', 'building_name']);
-            }
+            'applicant:id,first_name,last_name,email,contact_number',
+            'room:id,room_name',
+            'building:id,building_name',
+            'campus:id,campus_name'
         ])->get();
 
-        // Group by testing center
-        $grouped = $schedules->groupBy('testing_center')->map(function ($testingCenterSchedules, $testingCenterName) {
-            // Group by building inside testing center
-            $buildings = $testingCenterSchedules->groupBy('building_id')->map(function ($buildingSchedules) {
-                $buildingName = $buildingSchedules->first()->building->building_name ?? 'Unknown Building';
+        $grouped = $schedules->groupBy('campus_id')->map(function ($campusSchedules, $campusId) {
+            $campusName = optional($campusSchedules->first()->campus)->campus_name ?? 'Unknown Campus';
 
-                // Group by room inside building
-                $rooms = $buildingSchedules->groupBy('room_id')->map(function ($roomSchedules) {
-                    $roomName = $roomSchedules->first()->room->room_name ?? 'Unknown Room';
+            $buildings = $campusSchedules->groupBy('building_id')->map(function ($buildingSchedules, $buildingId) {
+                $buildingName = optional($buildingSchedules->first()->building)->building_name ?? 'Unknown Building';
 
-                    // Map students info inside room
+                $rooms = $buildingSchedules->groupBy('room_id')->map(function ($roomSchedules, $roomId) {
+                    $roomName = optional($roomSchedules->first()->room)->room_name ?? 'Unknown Room';
+
                     $students = $roomSchedules->map(function ($schedule) {
                         $applicant = $schedule->applicant;
                         return [
                             'schedule_id' => $schedule->id,
-                            'applicant_id' => $applicant->id ?? null,
+                            'admission_id' => $applicant->id ?? null,
                             'test_permit_no' => $schedule->test_permit_no,
                             'first_name' => $applicant->first_name ?? 'N/A',
                             'last_name' => $applicant->last_name ?? 'N/A',
@@ -83,28 +70,29 @@ class AdmissionsController extends Controller
                     })->values();
 
                     return [
-                        'room_id' => $roomSchedules->first()->room_id,
+                        'room_id' => $roomId,
                         'room_name' => $roomName,
                         'students' => $students,
                     ];
                 })->values();
 
                 return [
-                    'building_id' => $buildingSchedules->first()->building_id,
+                    'building_id' => $buildingId,
                     'building_name' => $buildingName,
                     'rooms' => $rooms,
                 ];
             })->values();
 
             return [
-                'testing_center' => $testingCenterName,
+                'campus_id' => $campusId,
+                'campus_name' => $campusName,
                 'buildings' => $buildings,
             ];
         })->values();
 
         return response()->json([
             'isSuccess' => true,
-            'message' => 'Exam schedules grouped by testing center, building, and room.',
+            'message' => 'Exam schedules grouped by campus, building, and room.',
             'data' => $grouped,
         ]);
     } catch (\Exception $e) {
@@ -115,6 +103,8 @@ class AdmissionsController extends Controller
         ], 500);
     }
 }
+
+
 
 
 
@@ -700,7 +690,7 @@ public function sendExamination(Request $request)
             ], 422);
         }
 
-        // --- your existing logic below ---
+
         $examDate = $request->exam_date;
         $results = [];
 
@@ -737,7 +727,7 @@ public function sendExamination(Request $request)
                         'test_permit_no' => $admission->test_permit_no,
                         'room_id' => $room->id,
                         'building_id' => $building->id,
-                        'campus_id' => $admission->school_campus_id,
+                        'campus_id' => $request->school_campus_id,
                         'course_id' => $request->course_id ?? null,
                         'exam_time_from' => $request->exam_time_from,
                         'exam_time_to' => $request->exam_time_to,

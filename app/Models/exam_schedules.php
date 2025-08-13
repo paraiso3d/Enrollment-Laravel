@@ -45,4 +45,8 @@ public function building()
 {
     return $this->belongsTo(campus_buildings::class, 'building_id');
 }
+public function campus()
+{
+    return $this->belongsTo(school_campus::class, 'campus_id');
+}
 }
