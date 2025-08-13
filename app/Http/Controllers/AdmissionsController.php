@@ -1155,9 +1155,9 @@ private function saveFileToPublic(Request $request, $field, $prefix)
         }
 
         // Existing rooms function (unchanged)
-        public function getByBuilding($id)
+        public function getByBuilding($buildingid)
         {
-            $rooms = building_rooms::where('building_id', $id)->get();
+            $rooms = building_rooms::where('building_id', $buildingid)->get();
             return response()->json($rooms);
         }
 
