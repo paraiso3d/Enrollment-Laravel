@@ -15,5 +15,6 @@ class school_years extends Model
         'enrollment_start_date',
         'enrollment_end_date',
         'is_archive',
+        'is_recent'
     ];
 }

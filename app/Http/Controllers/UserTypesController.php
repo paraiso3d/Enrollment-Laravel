@@ -13,25 +13,34 @@ use Throwable;
 
 class UserTypesController extends Controller
 {
-    public function getUserTypes()
-    {
+   public function getUserTypes(Request $request)
+{
+    try {
+        // Number of items per page (default 10 if not provided)
+        $perPage = $request->input('per_page', 5);
 
-        try {
-            // Retrieve all user types
-            $userTypes = user_types::where('is_archived', 0)->get();
+        // Paginate the query
+        $userTypes = user_types::where('is_archived', 0)
+            ->paginate($perPage);
 
-            return response()->json([
-                'isSuccess' => true,
-                'userTypes' => $userTypes,
-            ], 200);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve user types.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        return response()->json([
+            'isSuccess' => true,
+            'userTypes' => $userTypes->items(), // Only the data
+            'pagination' => [
+                'current_page' => $userTypes->currentPage(),
+                'per_page' => $userTypes->perPage(),
+                'total' => $userTypes->total(),
+                'last_page' => $userTypes->lastPage(),
+            ],
+        ], 200);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve user types.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     public function createUserType(Request $request)
     {

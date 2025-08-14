@@ -4,19 +4,44 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\departments;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
+use Throwable;
+
 
 class DepartmentsController extends Controller
 {
      // Get all departments (non-archived)
-    public function getDepartments()
-    {
-        $departments = departments::where('is_archive', 0)->get();
+    public function getDepartments(Request $request)
+{
+    try {
+        // Items per page (default 10 if not provided)
+        $perPage = $request->input('per_page', 5);
+
+        // Paginate departments that are not archived
+        $departments = departments::where('is_archive', 0)
+            ->paginate($perPage);
 
         return response()->json([
             'isSuccess' => true,
-            'department' => $departments
-        ]);
+            'departments' => $departments->items(),
+            'pagination' => [
+                'current_page' => $departments->currentPage(),
+                'per_page' => $departments->perPage(),
+                'total' => $departments->total(),
+                'last_page' => $departments->lastPage(),
+            ],
+        ], 200);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve departments.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
 
     // Add a new department
     public function addDepartment(Request $request)

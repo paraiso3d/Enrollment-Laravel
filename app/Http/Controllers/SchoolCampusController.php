@@ -12,25 +12,36 @@ use Throwable;
 
 class SchoolCampusController extends Controller
 {
-    public function getCampuses()
-    {
-        try {
-             $user = Auth::user();
-            // Retrieve all campuses
-            $campuses = school_campus::all();
+   public function getCampuses(Request $request)
+{
+    try {
+        $user = Auth::user();
 
-            return response()->json([
-                'isSuccess' => true,
-                'campuses' => $campuses,
-            ], 200);
-        } catch (Throwable $e) {
-            return response()->json([
-                'isSuccess' => false,
-                'message' => 'Failed to retrieve campuses.',
-                'error' => $e->getMessage(),
-            ], 500);
-        }
+        // Number of items per page (default 10 if not provided)
+        $perPage = $request->input('per_page', 5);
+
+        // Paginate campuses
+        $campuses = school_campus::paginate($perPage);
+
+        return response()->json([
+            'isSuccess' => true,
+            'campuses' => $campuses->items(),
+            'pagination' => [
+                'current_page' => $campuses->currentPage(),
+                'per_page' => $campuses->perPage(),
+                'total' => $campuses->total(),
+                'last_page' => $campuses->lastPage(),
+            ],
+        ], 200);
+    } catch (Throwable $e) {
+        return response()->json([
+            'isSuccess' => false,
+            'message' => 'Failed to retrieve campuses.',
+            'error' => $e->getMessage(),
+        ], 500);
     }
+}
+
 
     public function addCampus(Request $request)
     {

@@ -37,7 +37,7 @@ class AdmissionsController extends Controller
 public function getExamSchedules(Request $request)
 {
     try {
-        $perPage = $request->input('per_page', 10); // default 10 per page
+        $perPage = $request->input('per_page', 5); // default 10 per page
         $page = $request->input('page', 1);
 
         // Fetch paginated schedules with relationships
